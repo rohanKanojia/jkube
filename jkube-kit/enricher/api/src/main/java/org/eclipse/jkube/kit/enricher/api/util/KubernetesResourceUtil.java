@@ -613,74 +613,113 @@ public class KubernetesResourceUtil {
         int size = defaultContainers.size();
         if (size > 0) {
             if (containers == null || containers.isEmpty()) {
+                defaultApplicationContainerName = defaultContainers.get(0).getName();
                 builder.addToContainers(defaultContainers.toArray(new Container[size]));
             } else {
-                int idx = 0;
-                for (Container defaultContainer : defaultContainers) {
-                    Container container = null;
-                    if(sidecarEnabled) { // Consider container as sidecar
-                        for (Container fragmentContainer : containers) {
-                            if (fragmentContainer.getName() == null || fragmentContainer.getName().equals(defaultContainer.getName())) {
-                                container = fragmentContainer;
-                                defaultApplicationContainerName = defaultContainer.getName();
-                                break;
-                            }
-                        }
-                        if (container == null) {
-                            container = new Container();
-                            containers.add(container);
-                        }
-                    } else { // Old behavior
-                        if (idx < containers.size()) {
-                            container = containers.get(idx);
-                        } else {
-                            container = new Container();
-                            containers.add(container);
-                        }
-                        // If default container name is not set, add first found
-                        // container as default application container.
-                        if (defaultApplicationContainerName == null) {
-                            defaultApplicationContainerName = container.getName();
-                        }
-                    }
-
-                    mergeSimpleFields(container, defaultContainer);
-                    List<EnvVar> defaultEnv = defaultContainer.getEnv();
-                    if (defaultEnv != null) {
-                        for (EnvVar envVar : defaultEnv) {
-                            ensureHasEnv(container, envVar);
-                        }
-                    }
-                    List<ContainerPort> defaultPorts = defaultContainer.getPorts();
-                    if (defaultPorts != null) {
-                        for (ContainerPort port : defaultPorts) {
-                            ensureHasPort(container, port);
-                        }
-                    }
-                    if (container.getReadinessProbe() == null) {
-                        container.setReadinessProbe(defaultContainer.getReadinessProbe());
-                    }
-                    if (container.getLivenessProbe() == null) {
-                        container.setLivenessProbe(defaultContainer.getLivenessProbe());
-                    }
-                    if (container.getSecurityContext() == null) {
-                        container.setSecurityContext(defaultContainer.getSecurityContext());
-                    }
-                    idx++;
-                }
+                defaultApplicationContainerName = mergeFragmentIntoDefaultGeneratedContainers(containers, defaultContainers, sidecarEnabled);
                 builder.withContainers(containers);
             }
         } else if (!containers.isEmpty()) {
-            // lets default the container name if there's none specified in the custom yaml file
-            for (Container container : containers) {
-                if (StringUtils.isBlank(container.getName())) {
-                    container.setName(defaultName);
-                    break; // do it for one container only, but not necessarily the first one
-                }
-            }
+            updateFirstBlankNameContainer(containers, defaultName);
+            defaultApplicationContainerName = defaultName;
             builder.withContainers(containers);
         }
         return defaultApplicationContainerName; // Return the main application container's name.
+    }
+
+    private static Container getDefaultApplicationContainer(int idx, List<Container> containers, Container defaultContainer, boolean sidecarEnabled) {
+        if(sidecarEnabled) { // Consider container as sidecar
+            return getDefaultApplicationContainerWithSidecarStrategy(containers, defaultContainer);
+        } else { // Old behavior
+            return getDefaultApplicationContainerWithOldStrategy(idx, containers);
+        }
+    }
+
+    private static Container getDefaultApplicationContainerWithSidecarStrategy(List<Container> containers, Container defaultContainer) {
+        Container container = null;
+        for (Container fragmentContainer : containers) {
+            if (fragmentContainer.getName() == null || fragmentContainer.getName().equals(defaultContainer.getName())) {
+                container = fragmentContainer;
+                break;
+            }
+        }
+        return container;
+
+    }
+
+    private static Container getDefaultApplicationContainerWithOldStrategy(int idx, List<Container> containers) {
+        if (idx < containers.size()) {
+            return containers.get(idx);
+        }
+        return null;
+    }
+
+    private static void mergeFragmentIntoOpinionatedContainer(Container container, Container defaultContainer) {
+        mergeSimpleFields(container, defaultContainer);
+        List<EnvVar> defaultEnv = defaultContainer.getEnv();
+        if (defaultEnv != null) {
+            for (EnvVar envVar : defaultEnv) {
+                ensureHasEnv(container, envVar);
+            }
+        }
+        List<ContainerPort> defaultPorts = defaultContainer.getPorts();
+        if (defaultPorts != null) {
+            for (ContainerPort port : defaultPorts) {
+                ensureHasPort(container, port);
+            }
+        }
+        if (container.getReadinessProbe() == null) {
+            container.setReadinessProbe(defaultContainer.getReadinessProbe());
+        }
+        if (container.getLivenessProbe() == null) {
+            container.setLivenessProbe(defaultContainer.getLivenessProbe());
+        }
+        if (container.getSecurityContext() == null) {
+            container.setSecurityContext(defaultContainer.getSecurityContext());
+        }
+    }
+
+    private static String updateDefaultApplicationContainerName(String oldName, Container container, Container defaultContainer) {
+        // If default container name is not set, add first found
+        // container as default application container from resource
+        // fragment, if not present set default application container
+        // name from JKube generated PodSpec
+        if (oldName == null) {
+            if (container.getName() != null) { // Pick from fragment
+                oldName = container.getName();
+            } else if (defaultContainer.getName() != null) { // Pick from default opinionated PodSpec
+                oldName = defaultContainer.getName();
+            }
+        }
+        return oldName;
+    }
+
+    private static void updateFirstBlankNameContainer(List<Container> containers, String defaultName) {
+        // lets default the container name if there's none specified in the custom yaml file
+        for (Container container : containers) {
+            if (StringUtils.isBlank(container.getName())) {
+                container.setName(defaultName);
+                break; // do it for one container only, but not necessarily the first one
+            }
+        }
+    }
+
+    private static String mergeFragmentIntoDefaultGeneratedContainers(List<Container> containers, List<Container> defaultContainers, boolean sidecarEnabled) {
+        int idx = 0;
+        String defaultApplicationContainerName = null;
+        for (Container defaultContainer : defaultContainers) {
+            Container container = getDefaultApplicationContainer(idx, containers, defaultContainer, sidecarEnabled);
+            if (container == null) {
+                container = new Container();
+                containers.add(container);
+            }
+
+            defaultApplicationContainerName = updateDefaultApplicationContainerName(defaultApplicationContainerName, container, defaultContainer);
+            mergeFragmentIntoOpinionatedContainer(container, defaultContainer);
+            idx++;
+        }
+
+        return defaultApplicationContainerName;
     }
 
     private static void ensureHasEnv(Container container, EnvVar envVar) {
