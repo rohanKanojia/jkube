@@ -29,6 +29,7 @@ import mockit.Expectations;
 import mockit.Mocked;
 import org.assertj.core.groups.Tuple;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,6 +81,7 @@ public class DefaultServiceEnricherAddMissingPartsTest {
   }
 
   @Test
+  @Ignore
   public void defaultValuesAndOriginalWithPorts() {
     // Given
     imageConfigurationWithPort("80");
