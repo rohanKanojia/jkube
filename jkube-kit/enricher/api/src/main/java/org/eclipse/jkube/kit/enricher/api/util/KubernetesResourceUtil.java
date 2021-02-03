@@ -755,21 +755,6 @@ public class KubernetesResourceUtil {
         return "true".equals(catalogAnnotation);
     }
 
-    public static Set<HasMetadata> loadResources(File manifest) throws IOException {
-        final Set<HasMetadata> entities = new TreeSet<>(new HasMetadataComparator());
-        for (KubernetesResource dto : ResourceUtil.loadKubernetesResourceList(manifest)) {
-            if (dto == null) {
-                throw new IllegalStateException("Cannot load kubernetes manifest " + manifest);
-            }
-            if (dto instanceof Template) {
-                Template template = (Template) dto;
-                dto = OpenshiftHelper.processTemplatesLocally(template, false);
-            }
-            entities.addAll(KubernetesHelper.toItemList(dto));
-        }
-        return entities;
-    }
-
     /**
      * Merges the given resources together into a single resource.
      *
