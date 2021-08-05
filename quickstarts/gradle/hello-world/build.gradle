@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+    id 'org.eclipse.jkube.kubernetes' version '1.5.0-SNAPSHOT'
+}
+
+group 'org.eclipse.jkube.quickstarts.gradle'
+version '1.5.0-SNAPSHOT'
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'org.eclipse.jkube.quickstarts.gradle.helloworld.App'
+    }
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+kubernetes {
+    images {
+        image {
+            name = 'helloworld-java:latest'
+            alias = 'hello-world'
+            build {
+                from = 'quay.io/rohankanojia/java-centos-openjdk11-jdk:latest'
+                cmd {
+                    exec = ['java','-jar','maven/hello-world-1.5.0-SNAPSHOT.jar']
+                }
+            }
+        }
+    }
+}
