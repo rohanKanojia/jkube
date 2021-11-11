@@ -1,0 +1,44 @@
+buildscript {
+    ext {
+        dekorateVersion = '0.10.5'
+    }
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath 'net.ltgt.gradle:gradle-apt-plugin:0.19'
+    }
+}
+
+plugins {
+    id 'org.springframework.boot' version '2.5.6'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'org.eclipse.jkube.kubernetes' version '1.5.1'
+    id 'org.eclipse.jkube.openshift' version '1.5.1'
+    id 'java'
+}
+
+group = 'org.eclipse.jkube.quickstarts.gradle.spring.boot.dekorate'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation "io.dekorate:openshift-annotations:${dekorateVersion}"
+    implementation "io.dekorate:kubernetes-annotations:${dekorateVersion}"
+    implementation "io.dekorate:option-annotations:${dekorateVersion}"
+    implementation "io.dekorate:dekorate-spring-boot:${dekorateVersion}"
+
+    annotationProcessor "io.dekorate:kubernetes-annotations:${dekorateVersion}"
+    annotationProcessor "io.dekorate:openshift-annotations:${dekorateVersion}"
+    annotationProcessor "io.dekorate:option-annotations:${dekorateVersion}"
+    annotationProcessor "io.dekorate:dekorate-spring-boot:${dekorateVersion}"
+    annotationProcessor 'org.springframework.boot:spring-boot-starter-actuator'
+}
