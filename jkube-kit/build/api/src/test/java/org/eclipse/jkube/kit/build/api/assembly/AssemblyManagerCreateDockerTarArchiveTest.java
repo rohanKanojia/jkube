@@ -84,7 +84,6 @@ public class AssemblyManagerCreateDockerTarArchiveTest {
     // Then
     ArchiveAssertions.assertThat(result)
         .isFile()
-        .hasSize(1536)
         .hasName("changed-files.tar")
         .fileTree()
         .containsExactly("test-0.1.0.jar");
@@ -103,7 +102,7 @@ public class AssemblyManagerCreateDockerTarArchiveTest {
     // Then
     assertTargetHasDockerDirectories("test-image");
     ArchiveAssertions.assertThat(dockerArchiveFile)
-        .isFile().hasName("docker-build.tar").hasSize(4096)
+        .isFile().hasName("docker-build.tar")
         .fileTree()
         .containsExactlyInAnyOrder(
             "Dockerfile",
@@ -139,7 +138,7 @@ public class AssemblyManagerCreateDockerTarArchiveTest {
     // Then
     assertTargetHasDockerDirectories("no-docker-file-and-customizer");
     ArchiveAssertions.assertThat(dockerArchiveFile)
-        .isFile().hasName("docker-build.tar").hasSize(4096)
+        .isFile().hasName("docker-build.tar")
         .fileTree()
         .containsExactlyInAnyOrder(
             "Dockerfile",
@@ -174,7 +173,7 @@ public class AssemblyManagerCreateDockerTarArchiveTest {
     // Then
     assertTargetHasDockerDirectories("modified-image");
     ArchiveAssertions.assertThat(dockerArchiveFile)
-        .isFile().hasName("docker-build.tar").hasSize(4608)
+        .isFile().hasName("docker-build.tar")
         .fileTree()
         .containsExactlyInAnyOrder(
             "Dockerfile",
@@ -210,7 +209,7 @@ public class AssemblyManagerCreateDockerTarArchiveTest {
     // Then
     assertTargetHasDockerDirectories("test-image");
     ArchiveAssertions.assertThat(dockerArchiveFile)
-        .isFile().hasName("docker-build.tar").hasSize(5120)
+        .isFile().hasName("docker-build.tar")
         .fileTree()
         .containsExactlyInAnyOrder(
             "Dockerfile",
@@ -256,7 +255,7 @@ public class AssemblyManagerCreateDockerTarArchiveTest {
 
     // Then
     assertTargetHasDockerDirectories("dockerfile-and-assembly-file");
-    assertThat(dockerArchiveFile).isFile().hasName("docker-build.tar").hasSize(6144);
+    assertThat(dockerArchiveFile).isFile().hasName("docker-build.tar");
     assertDockerFile("dockerfile-and-assembly-file").hasContent("FROM busybox\n");
     assertBuildDirectoryFileTree("dockerfile-and-assembly-file").containsExactlyInAnyOrder(
         "Dockerfile",
@@ -286,7 +285,7 @@ public class AssemblyManagerCreateDockerTarArchiveTest {
 
     // Then
     assertTargetHasDockerDirectories("test-image");
-    assertThat(dockerArchiveFile).isFile().hasName("docker-build.tar").hasSize(4608);
+    assertThat(dockerArchiveFile).isFile().hasName("docker-build.tar");
     assertDockerFile("test-image").hasContent("FROM openjdk:jre\n");
     assertBuildDirectoryFileTree("test-image").containsExactlyInAnyOrder(
         "Dockerfile",
@@ -314,7 +313,7 @@ public class AssemblyManagerCreateDockerTarArchiveTest {
 
     // Then
     assertTargetHasDockerDirectories("test-image");
-    assertThat(dockerArchiveFile).isFile().hasName("docker-build.tar").hasSize(6144);
+    assertThat(dockerArchiveFile).isFile().hasName("docker-build.tar");
     assertDockerFile("test-image").hasContent("FROM openjdk:jre\n");
     assertBuildDirectoryFileTree("test-image").containsExactlyInAnyOrder(
         "Dockerfile",
@@ -344,7 +343,7 @@ public class AssemblyManagerCreateDockerTarArchiveTest {
 
     // Then
     assertTargetHasDockerDirectories("test-image");
-    assertThat(dockerArchiveFile).isFile().hasName("docker-build.tar").hasSize(6144);
+    assertThat(dockerArchiveFile).isFile().hasName("docker-build.tar");
     assertDockerFile("test-image").hasContent("FROM openjdk:jre\n");
     assertBuildDirectoryFileTree("test-image").containsExactlyInAnyOrder(
         "Dockerfile",
