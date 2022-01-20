@@ -13,7 +13,7 @@
  */
 package org.eclipse.jkube.kit.build.api.helper;
 
-import com.google.gson.Gson;
+import com.google.gson.Gson
 import com.google.gson.JsonObject;
 
 import org.apache.commons.lang3.StringUtils;
