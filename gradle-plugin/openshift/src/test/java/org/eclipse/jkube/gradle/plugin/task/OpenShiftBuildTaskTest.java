@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.mockito.MockedConstruction;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -41,12 +41,12 @@ public class OpenShiftBuildTaskTest {
   public TaskEnvironment taskEnvironment = new TaskEnvironment();
 
   private MockedConstruction<OpenshiftBuildService> openshiftBuildServiceMockedConstruction;
+  private final OpenShiftExtension extension = new TestOpenShiftExtension();
 
   @Before
   public void setUp() {
     openshiftBuildServiceMockedConstruction = mockConstruction(OpenshiftBuildService.class,
         (mock, ctx) -> when(mock.isApplicable()).thenReturn(true));
-    final OpenShiftExtension extension = new TestOpenShiftExtension();
     when(taskEnvironment.project.getExtensions().getByType(OpenShiftExtension.class)).thenReturn(extension);
     extension.images = Collections.singletonList(ImageConfiguration.builder()
       .name("foo/bar:latest")
@@ -75,7 +75,7 @@ public class OpenShiftBuildTaskTest {
     // Then
     assertThat(buildTask.jKubeServiceHub.getBuildService()).isNotNull()
         .isInstanceOf(OpenshiftBuildService.class);
-    verify(buildTask.jKubeServiceHub.getBuildService(), times(1)).build(any());
+    verify(buildTask.jKubeServiceHub.getBuildService(), times(1)).build(anyList());
   }
 
 }
