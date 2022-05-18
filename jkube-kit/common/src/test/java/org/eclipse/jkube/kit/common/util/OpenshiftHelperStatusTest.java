@@ -15,6 +15,7 @@ package org.eclipse.jkube.kit.common.util;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.BooleanSupplier;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,49 +25,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(Parameterized.class)
 public class OpenshiftHelperStatusTest {
-  @Parameterized.Parameters(name = "{index} OpenShift Status: '{0}'")
+  @Parameterized.Parameters(name = "{0} - {2}")
   public static Collection<Object[]> data() {
     return Arrays.asList(
-        // input, isFinished, isCancelled, isFailed, isCompleted
-        new Object[] { "Complete", true, false, false, true },
-        new Object[] { "Error", true, false, true, false },
-        new Object[] { "Cancelled", true, true, false, false },
-        new Object[] { "not Complete", false, false, false, false },
-        new Object[] { null, false, false, false, false });
+        // input, method, expectedValue
+        new Object[] { "IsCancelledTrue", (BooleanSupplier)(() -> OpenshiftHelper.isCancelled("Cancelled")), true},
+        new Object[] { "IsCancelledFalse", (BooleanSupplier)(() -> OpenshiftHelper.isCancelled("not Cancelled")), false},
+        new Object[] { "IsFailedTrueWithFail", (BooleanSupplier)(() -> OpenshiftHelper.isFailed("Fail")), true},
+        new Object[] { "IsFailedTrueWithError", (BooleanSupplier)(() -> OpenshiftHelper.isFailed("Error")), true},
+        new Object[] { "IsFailedFalse", (BooleanSupplier)(() -> OpenshiftHelper.isFailed(null)), false},
+        new Object[] { "IsCompletedTrue", (BooleanSupplier)(() -> OpenshiftHelper.isCompleted("Complete")), true},
+        new Object[] { "IsCompletedFalse", (BooleanSupplier)(() -> OpenshiftHelper.isCompleted("not Complete")), false},
+        new Object[] { "IsFinishedComplete", (BooleanSupplier)(() -> OpenshiftHelper.isFinished("Complete")), true},
+        new Object[] { "IsFinishedFailed", (BooleanSupplier)(() -> OpenshiftHelper.isFinished("Error")), true},
+        new Object[] { "IsFinishedCancelled", (BooleanSupplier)(() -> OpenshiftHelper.isFinished("Cancelled")), true},
+        new Object[] { "IsFinishedFalse", (BooleanSupplier)(() -> OpenshiftHelper.isFinished("not Complete")), false}
+    );
   }
 
   @Parameterized.Parameter
   public String input;
-  @Parameterized.Parameter(1)
-  public boolean isFinished;
-  @Parameterized.Parameter(2)
-  public boolean isCancelled;
-  @Parameterized.Parameter(3)
-  public boolean isFailed;
-  @Parameterized.Parameter(4)
-  public boolean isCompleted;
+
+  @Parameterized.Parameter (1)
+  public BooleanSupplier statusSupplier;
+
+  @Parameterized.Parameter (2)
+  public boolean expectedValue;
 
   @Test
-  public void testIsFinished() {
-    boolean result = OpenshiftHelper.isFinished(input);
-    assertThat(result).isEqualTo(isFinished);
-  }
-
-  @Test
-  public void testIsCancelled() {
-    boolean result = OpenshiftHelper.isCancelled(input);
-    assertThat(result).isEqualTo(isCancelled);
-  }
-
-  @Test
-  public void testIsFailed() {
-    boolean result = OpenshiftHelper.isFailed(input);
-    assertThat(result).isEqualTo(isFailed);
-  }
-
-  @Test
-  public void testIsCompleted() {
-    boolean result = OpenshiftHelper.isCompleted(input);
-    assertThat(result).isEqualTo(isCompleted);
+  public void testOpenShiftStatus() {
+    assertThat(statusSupplier.getAsBoolean()).isEqualTo(expectedValue);
   }
 }
