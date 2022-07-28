@@ -19,6 +19,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,6 +53,8 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.internal.deprecation.DeprecatableConfiguration;
+
+import static org.eclipse.jkube.gradle.plugin.KubernetesPlugin.KUBERNETES_PLUGIN_TASK_PRIORITIES;
 
 public class GradleUtil {
 
@@ -102,6 +105,15 @@ public class GradleUtil {
         acc.put(e.getKey(), e.getValue());
         return acc;
       }, (acc, e) -> acc);
+  }
+
+  public static String getLastExecutingTask(Project gradleProject, Map<String, Integer> taskPrioritiesMap) {
+    List<String> tasks = gradleProject.getGradle().getStartParameter().getTaskNames().stream()
+        .filter(taskPrioritiesMap::containsKey)
+        .sorted(Comparator.comparing(taskPrioritiesMap::get))
+        .collect(Collectors.toList());
+
+    return tasks.isEmpty() ? null : tasks.get(tasks.size() - 1);
   }
 
   private static List<Dependency> extractDependencies(Project gradleProject) {

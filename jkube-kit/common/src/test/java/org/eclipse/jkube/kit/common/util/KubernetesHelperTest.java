@@ -22,6 +22,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
+import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBuilder;
+import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.RouteBuilder;
 import org.eclipse.jkube.kit.common.KitLogger;
 
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
@@ -262,6 +266,34 @@ class KubernetesHelperTest {
         // Then
         assertThat(result1).isEqualTo("networking.istio.io/v1alpha3#VirtualService");
         assertThat(result2).isEqualTo("networking.istio.io/v1alpha3#Gateway");
+    }
+
+    @Test
+    void getFullyQualifiedName_whenInvokedWithValidNamespacedAndResource_shouldReturnNameWithApiVersionKindNamespaceName() {
+        // Given
+        Route route = new RouteBuilder()
+            .withNewMetadata().withName("r1").endMetadata()
+            .build();
+
+        // When
+        String result = KubernetesHelper.getFullyQualifiedName(route, "ns1");
+
+        // Then
+        assertThat(result).isEqualTo("route.openshift.io/v1 Route ns1/r1");
+    }
+
+    @Test
+    void getFullyQualifiedName_whenInvokedWithNullNamespacedAndResource_shouldReturnNameWithApiVersionKindNamespaceName() {
+        // Given
+        ClusterRole clusterRole = new ClusterRoleBuilder()
+            .withNewMetadata().withName("r1").endMetadata()
+            .build();
+
+        // When
+        String result = KubernetesHelper.getFullyQualifiedName(clusterRole, null);
+
+        // Then
+        assertThat(result).isEqualTo("rbac.authorization.k8s.io/v1 ClusterRole r1");
     }
 
     @Test

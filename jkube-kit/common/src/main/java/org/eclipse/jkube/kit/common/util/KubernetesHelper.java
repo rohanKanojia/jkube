@@ -738,6 +738,20 @@ public class KubernetesHelper {
             "#" + item.getKind();
     }
 
+    public static String getFullyQualifiedName(HasMetadata h, String namespace) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(h.getApiVersion())
+            .append(" ")
+            .append(h.getKind())
+            .append(" ");
+
+        if (namespace != null) {
+            sb.append(namespace).append("/");
+        }
+        sb.append(h.getMetadata().getName());
+        return sb.toString();
+    }
+
     public static String getNewestApplicationPodName(KubernetesClient client, String namespace, Collection<HasMetadata> resources) {
         LabelSelector selector = extractPodLabelSelector(resources);
         final PodList pods;

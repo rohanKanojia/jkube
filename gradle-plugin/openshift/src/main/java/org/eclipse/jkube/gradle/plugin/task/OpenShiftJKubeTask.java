@@ -16,6 +16,10 @@ package org.eclipse.jkube.gradle.plugin.task;
 import org.eclipse.jkube.gradle.plugin.OpenShiftExtension;
 import org.gradle.api.tasks.Internal;
 
+import java.util.Map;
+
+import static org.eclipse.jkube.gradle.plugin.OpenShiftPlugin.OPENSHIFT_PLUGIN_TASK_PRIORITIES;
+
 public interface OpenShiftJKubeTask extends KubernetesJKubeTask {
 
   String DEFAULT_LOG_PREFIX = "oc: ";
@@ -29,5 +33,11 @@ public interface OpenShiftJKubeTask extends KubernetesJKubeTask {
   @Override
   default String getLogPrefix() {
     return DEFAULT_LOG_PREFIX;
+  }
+
+  @Internal
+  @Override
+  default Map<String, Integer> getTaskPrioritiesMap() {
+    return OPENSHIFT_PLUGIN_TASK_PRIORITIES;
   }
 }

@@ -24,6 +24,8 @@ import java.util.Optional;
 import org.eclipse.jkube.generator.api.GeneratorContext;
 import org.eclipse.jkube.generator.api.GeneratorManager;
 import org.eclipse.jkube.kit.build.core.GavLabel;
+import org.eclipse.jkube.kit.common.summary.Summary;
+import org.eclipse.jkube.kit.common.util.SummaryUtil;
 import org.eclipse.jkube.kit.config.image.build.JKubeBuildStrategy;
 import org.eclipse.jkube.kit.common.JKubeConfiguration;
 import org.eclipse.jkube.kit.build.service.docker.DockerAccessFactory;
@@ -387,6 +389,9 @@ public abstract class AbstractDockerMojo extends AbstractMojo
     @Parameter(property = "jkube.offline", defaultValue = "false")
     protected boolean offline;
 
+    @Parameter(property = "jkube.summaryEnabled", defaultValue = "true")
+    public boolean summaryEnabled;
+
     protected JavaProject javaProject;
 
     @Override
@@ -449,16 +454,24 @@ public abstract class AbstractDockerMojo extends AbstractMojo
                     .build();
                 resolvedImages = ConfigHelper.initImageConfiguration(apiVersion, getBuildTimestamp(getPluginContext(), CONTEXT_KEY_BUILD_TIMESTAMP, project.getBuild().getDirectory(), DOCKER_BUILD_TIMESTAMP), images, imageConfigResolver, log, filter, this, jkubeServiceHub.getConfiguration());
                 executeInternal();
+                SummaryUtil.setSuccessful(true);
             } catch (IOException | DependencyResolutionRequiredException exp) {
+                SummaryUtil.setSuccessful(false);
+                SummaryUtil.setFailureCause(exp.getMessage());
                 logException(exp);
                 throw new MojoExecutionException(exp.getMessage());
             } catch (MojoExecutionException exp) {
+                SummaryUtil.setSuccessful(false);
+                SummaryUtil.setFailureCause(exp.getMessage());
                 logException(exp);
                 throw exp;
             } finally {
                 Optional.ofNullable(jkubeServiceHub).ifPresent(JKubeServiceHub::close);
             }
         } finally {
+            if (MavenUtil.getLastExecutingGoal(session, getLogPrefix().trim()).equals(mojoExecution.getGoal())) {
+                SummaryUtil.printSummary(log, javaProject.getBaseDirectory(), summaryEnabled);
+            }
             Ansi.setEnabled(ansiRestore);
         }
     }

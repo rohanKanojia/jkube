@@ -18,6 +18,7 @@ import java.util.List;
 
 import org.eclipse.jkube.kit.common.Configs;
 import org.eclipse.jkube.kit.common.util.JKubeProjectUtil;
+import org.eclipse.jkube.kit.common.util.SummaryUtil;
 import org.eclipse.jkube.kit.config.image.ImageConfiguration;
 import org.eclipse.jkube.kit.config.resource.PlatformMode;
 import org.eclipse.jkube.kit.config.resource.ResourceConfig;
@@ -83,6 +84,7 @@ public class ControllerViaPluginConfigurationEnricher extends BaseEnricher {
         final List<ImageConfiguration> images = getImages();
         // Check if at least a replica set is added. If not add a default one
         if (KubernetesResourceUtil.checkForKind(builder, POD_CONTROLLER_KINDS)) {
+            SummaryUtil.addToEnrichers(getName());
             // At least one image must be present, otherwise the resulting config will be invalid
             if (KubernetesResourceUtil.checkForKind(builder, "StatefulSet")) {
                 final StatefulSetSpec spec = statefulSetHandler.get(config, images).getSpec();

@@ -21,6 +21,7 @@ import org.eclipse.jkube.kit.common.RegistryConfig;
 import org.eclipse.jkube.kit.common.util.AnsiLogger;
 import org.eclipse.jkube.kit.common.util.EnvUtil;
 import org.eclipse.jkube.kit.common.util.MavenUtil;
+import org.eclipse.jkube.kit.common.util.SummaryUtil;
 import org.eclipse.jkube.kit.config.access.ClusterAccess;
 import org.eclipse.jkube.kit.config.access.ClusterConfiguration;
 
@@ -42,6 +43,7 @@ import org.eclipse.jkube.maven.plugin.mojo.KitLoggerProvider;
 import org.sonatype.plexus.components.sec.dispatcher.SecDispatcher;
 import org.sonatype.plexus.components.sec.dispatcher.SecDispatcherException;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -89,6 +91,12 @@ public abstract class AbstractJKubeMojo extends AbstractMojo implements KitLogge
     @Parameter(property = "jkube.namespace")
     public String namespace;
 
+    @Parameter(property = "jkube.summaryEnabled", defaultValue = "true")
+    public boolean summaryEnabled;
+
+    @Parameter(property = "jkube.build.target.dir", defaultValue="target/docker")
+    protected String outputDirectory;
+
     @Parameter
     protected ClusterConfiguration access;
 
@@ -113,8 +121,15 @@ public abstract class AbstractJKubeMojo extends AbstractMojo implements KitLogge
                 return;
             }
             executeInternal();
+            SummaryUtil.setSuccessful(true);
         } catch (DependencyResolutionRequiredException e) {
+            SummaryUtil.setSuccessful(false);
+            SummaryUtil.setFailureCause(e.getMessage());
             throw new MojoFailureException(e.getMessage());
+        } finally {
+            if (MavenUtil.getLastExecutingGoal(session, getLogPrefix().trim()).equals(mojoExecution.getGoal())) {
+                SummaryUtil.printSummary(log, javaProject.getBaseDirectory(), summaryEnabled);
+            }
         }
     }
 

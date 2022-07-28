@@ -76,6 +76,15 @@ public class IngressIT {
         .contains("Using resource templates from")
         .contains("Adding a default Deployment")
         .contains("Adding revision history limit to 2")
-        .contains("validating");
+        .contains("validating")
+        .contains("SUMMARY")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/ingress-deployment.yml")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/ingress-ingress.yml")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/ingress-service.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes.yml")
+        .contains("SUCCESS");
   }
 }

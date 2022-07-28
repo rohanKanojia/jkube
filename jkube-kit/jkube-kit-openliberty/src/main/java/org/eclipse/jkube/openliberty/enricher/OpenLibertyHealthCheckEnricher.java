@@ -18,6 +18,7 @@ import io.fabric8.kubernetes.api.model.ProbeBuilder;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.eclipse.jkube.kit.common.Configs;
+import org.eclipse.jkube.kit.common.util.SummaryUtil;
 import org.eclipse.jkube.kit.enricher.api.JKubeEnricherContext;
 import org.eclipse.jkube.kit.enricher.specific.AbstractHealthCheckEnricher;
 
@@ -82,6 +83,7 @@ public class OpenLibertyHealthCheckEnricher extends AbstractHealthCheckEnricher 
 
   private Probe discoverOpenLibertyHealthCheck(String path, int initialDelay, int failureThreshold, int successThreshold, int periodSeconds) {
     if (hasMicroProfileDependency(getContext().getProject()) && isMicroProfileHealthEnabled(getContext().getProject())) {
+      SummaryUtil.addToEnrichers(getName());
       return new ProbeBuilder()
           .withNewHttpGet()
           .withNewPort(asInteger(getConfig(Config.PORT)))

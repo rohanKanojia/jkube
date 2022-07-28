@@ -35,6 +35,20 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 
 public class KubernetesPlugin extends AbstractJKubePlugin<KubernetesExtension> {
+  public static Map<String, Integer> KUBERNETES_PLUGIN_TASK_PRIORITIES = new HashMap<>();
+
+  static {
+    KUBERNETES_PLUGIN_TASK_PRIORITIES.put("k8sBuild", 1);
+    KUBERNETES_PLUGIN_TASK_PRIORITIES.put("k8sResource", 2);
+    KUBERNETES_PLUGIN_TASK_PRIORITIES.put("k8sPush", 2);
+    KUBERNETES_PLUGIN_TASK_PRIORITIES.put("k8sHelm", 3);
+    KUBERNETES_PLUGIN_TASK_PRIORITIES.put("k8sHelmPush", 4);
+    KUBERNETES_PLUGIN_TASK_PRIORITIES.put("k8sApply", 5);
+    KUBERNETES_PLUGIN_TASK_PRIORITIES.put("k8sLog", 6);
+    KUBERNETES_PLUGIN_TASK_PRIORITIES.put("k8sDebug", 6);
+    KUBERNETES_PLUGIN_TASK_PRIORITIES.put("k8sWatch", 6);
+    KUBERNETES_PLUGIN_TASK_PRIORITIES.put("k8sUndeploy", 7);
+  }
 
   public KubernetesPlugin() {
     super("kubernetes", KubernetesExtension.class);

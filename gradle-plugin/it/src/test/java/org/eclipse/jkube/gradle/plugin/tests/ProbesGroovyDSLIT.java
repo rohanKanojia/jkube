@@ -58,7 +58,15 @@ public class ProbesGroovyDSLIT {
         .contains("jkube-controller: Adding a default Deployment")
         .contains("jkube-service: Adding a default service")
         .contains("jkube-service-discovery: Using first mentioned service port '8080' ")
-        .contains("jkube-revision-history: Adding revision history limit to 2");
+        .contains("jkube-revision-history: Adding revision history limit to 2")
+        .contains("SUMMARY")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/probes-groovy-dsl-config-deployment.yml")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/probes-groovy-dsl-config-service.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes.yml")
+        .contains("SUCCESS");
   }
 
   @Test
@@ -76,6 +84,15 @@ public class ProbesGroovyDSLIT {
         .contains("jkube-service: Adding a default service")
         .contains("jkube-openshift-deploymentconfig: Converting Deployment to DeploymentConfig")
         .contains("jkube-service-discovery: Using first mentioned service port '8080' ")
-        .contains("jkube-revision-history: Adding revision history limit to 2");
+        .contains("jkube-revision-history: Adding revision history limit to 2")
+        .contains("SUMMARY")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/probes-groovy-dsl-config-deploymentconfig.yml")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/probes-groovy-dsl-config-service.yml")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/probes-groovy-dsl-config-route.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/openshift.yml")
+        .contains("SUCCESS");
   }
 }

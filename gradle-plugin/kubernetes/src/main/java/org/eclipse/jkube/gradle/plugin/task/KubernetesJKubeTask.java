@@ -16,6 +16,10 @@ package org.eclipse.jkube.gradle.plugin.task;
 import org.eclipse.jkube.gradle.plugin.KubernetesExtension;
 import org.gradle.api.tasks.Internal;
 
+import java.util.Map;
+
+import static org.eclipse.jkube.gradle.plugin.KubernetesPlugin.KUBERNETES_PLUGIN_TASK_PRIORITIES;
+
 public interface KubernetesJKubeTask extends JKubeTask {
 
   String DEFAULT_LOG_PREFIX = "k8s: ";
@@ -25,5 +29,10 @@ public interface KubernetesJKubeTask extends JKubeTask {
   @Internal
   default String getLogPrefix() {
     return DEFAULT_LOG_PREFIX;
+  }
+
+  @Internal
+  default Map<String, Integer> getTaskPrioritiesMap() {
+    return KUBERNETES_PLUGIN_TASK_PRIORITIES;
   }
 }

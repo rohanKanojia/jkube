@@ -38,6 +38,20 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 
 public class OpenShiftPlugin extends AbstractJKubePlugin<OpenShiftExtension> {
+  public static final Map<String, Integer> OPENSHIFT_PLUGIN_TASK_PRIORITIES = new HashMap<>();
+
+  static {
+    OPENSHIFT_PLUGIN_TASK_PRIORITIES.put("ocBuild", 1);
+    OPENSHIFT_PLUGIN_TASK_PRIORITIES.put("ocResource", 2);
+    OPENSHIFT_PLUGIN_TASK_PRIORITIES.put("ocPush", 2);
+    OPENSHIFT_PLUGIN_TASK_PRIORITIES.put("ocHelm", 3);
+    OPENSHIFT_PLUGIN_TASK_PRIORITIES.put("ocHelmPush", 4);
+    OPENSHIFT_PLUGIN_TASK_PRIORITIES.put("ocApply", 5);
+    OPENSHIFT_PLUGIN_TASK_PRIORITIES.put("ocLog", 6);
+    OPENSHIFT_PLUGIN_TASK_PRIORITIES.put("ocDebug", 6);
+    OPENSHIFT_PLUGIN_TASK_PRIORITIES.put("ocWatch", 6);
+    OPENSHIFT_PLUGIN_TASK_PRIORITIES.put("ocUndeploy", 7);
+  }
 
   public OpenShiftPlugin() {
     super("openshift", OpenShiftExtension.class);

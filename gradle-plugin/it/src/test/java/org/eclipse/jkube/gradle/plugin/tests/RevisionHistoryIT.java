@@ -64,7 +64,14 @@ public class RevisionHistoryIT {
         .contains("Using resource templates from")
         .contains("Adding a default Deployment")
         .contains("Adding revision history limit to ")
-        .contains("validating");
+        .contains("validating")
+        .contains("SUMMARY")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/revisionhistory-deployment.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes.yml")
+        .contains("SUCCESS");
   }
 
   @Test
@@ -83,6 +90,13 @@ public class RevisionHistoryIT {
         .contains("Using resource templates from")
         .contains("Adding a default Deployment")
         .contains("Adding revision history limit to ")
-        .contains("validating");
+        .contains("validating")
+        .contains("SUMMARY")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/revisionhistory-deploymentconfig.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/openshift.yml")
+        .contains("SUCCESS");
   }
 }

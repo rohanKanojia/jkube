@@ -35,6 +35,7 @@ import org.eclipse.jkube.kit.build.api.assembly.BuildDirs;
 import org.eclipse.jkube.kit.common.Assembly;
 import org.eclipse.jkube.kit.common.AssemblyFileEntry;
 import org.eclipse.jkube.kit.common.KitLogger;
+import org.eclipse.jkube.kit.common.util.SummaryUtil;
 import org.eclipse.jkube.kit.config.image.ImageConfiguration;
 import org.eclipse.jkube.kit.config.image.ImageName;
 import org.eclipse.jkube.kit.config.image.build.Arguments;
@@ -129,6 +130,8 @@ public class JibServiceUtil {
         } else {
             imageName = new ImageName(imageConfiguration.getName());
         }
+        SummaryUtil.setPushRegistry(Optional.ofNullable(imageName.getRegistry())
+            .orElse("docker.io"));
         return imageName.getFullName();
     }
 

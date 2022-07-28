@@ -64,7 +64,16 @@ public class VolumePermissionIT {
     assertThat(result).extracting(BuildResult::getOutput).asString()
         .contains("Using resource templates from")
         .contains("Adding revision history limit to 2")
-        .contains("validating");
+        .contains("validating")
+        .contains("SUMMARY")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/jkube-docker-registry-deployment.yml")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/jkube-docker-registry-service.yml")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/jkube-docker-registry-storage-persistentvolumeclaim.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes.yml")
+        .contains("SUCCESS");
   }
 
   @Test
@@ -82,6 +91,16 @@ public class VolumePermissionIT {
     assertThat(result).extracting(BuildResult::getOutput).asString()
         .contains("Using resource templates from")
         .contains("Adding revision history limit to 2")
-        .contains("validating");
+        .contains("validating")
+        .contains("SUMMARY")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/jkube-docker-registry-deploymentconfig.yml")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/jkube-docker-registry-route.yml")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/jkube-docker-registry-service.yml")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/jkube-docker-registry-storage-persistentvolumeclaim.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/openshift.yml")
+        .contains("SUCCESS");
   }
 }

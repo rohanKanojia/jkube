@@ -26,6 +26,7 @@ import org.eclipse.jkube.kit.common.AssemblyFileEntry;
 import org.eclipse.jkube.kit.common.KitLogger;
 import org.eclipse.jkube.kit.common.archive.ArchiveCompression;
 import org.eclipse.jkube.kit.common.util.EnvUtil;
+import org.eclipse.jkube.kit.common.util.SummaryUtil;
 import org.eclipse.jkube.kit.config.image.ImageConfiguration;
 import org.eclipse.jkube.kit.config.image.ImageName;
 import org.eclipse.jkube.kit.common.RegistryConfig;
@@ -70,7 +71,11 @@ public class JibBuildService extends AbstractImageBuildService {
 
     @Override
     public boolean isApplicable() {
-        return buildServiceConfig.getJKubeBuildStrategy() == JKubeBuildStrategy.jib;
+        if (buildServiceConfig.getJKubeBuildStrategy() == JKubeBuildStrategy.jib) {
+            SummaryUtil.setBuildStrategy("Local Jib");
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -99,6 +104,7 @@ public class JibBuildService extends AbstractImageBuildService {
             File dockerTarArchive = getAssemblyTarArchive(imageConfig, configuration, log);
             JibServiceUtil.buildContainer(containerBuilder,
                 TarImage.at(dockerTarArchive.toPath()).named(imageConfig.getName()), log);
+            SummaryUtil.setImageNameImageSummary(imageConfig.getName(), new ImageName(imageConfig.getName()).getFullName());
             log.info(" %s successfully built", dockerTarArchive.getAbsolutePath());
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();

@@ -31,7 +31,7 @@ public class ServiceIT {
   public void k8sResourceTask_whenRun_generatesK8sManifestWithService() throws IOException, ParseException {
     // When
     final BuildResult result = gradleRunner.withITProject("service")
-        .withArguments("k8sResource", "--stacktrace")
+        .withArguments("clean", "build", "k8sResource", "--stacktrace")
         .build();
     // Then
     ResourceVerify.verifyResourceDescriptors(gradleRunner.resolveDefaultKubernetesResourceFile(),
@@ -40,14 +40,23 @@ public class ServiceIT {
         .contains("Using resource templates from")
         .contains("Adding a default Deployment")
         .contains("Adding revision history limit to 2")
-        .contains("validating");
+        .contains("validating")
+        .contains("SUMMARY")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/service-deployment.yml")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/svc1-service.yml")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/svc2-service.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes.yml")
+        .contains("SUCCESS");
   }
 
   @Test
   public void ocResourceTask_whenRun_generatesOpenShiftManifestWithServiceAndRoute() throws IOException, ParseException {
     // When
     final BuildResult result = gradleRunner.withITProject("service")
-        .withArguments("ocResource", "--stacktrace")
+        .withArguments("clean", "build", "ocResource", "--stacktrace")
         .build();
     // Then
     ResourceVerify.verifyResourceDescriptors(gradleRunner.resolveDefaultOpenShiftResourceFile(),
@@ -56,6 +65,16 @@ public class ServiceIT {
         .contains("Using resource templates from")
         .contains("Adding a default Deployment")
         .contains("Adding revision history limit to 2")
-        .contains("validating");
+        .contains("validating")
+        .contains("SUMMARY")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/service-deploymentconfig.yml")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/svc1-route.yml")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/svc1-service.yml")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/svc2-service.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/openshift.yml")
+        .contains("SUCCESS");
   }
 }

@@ -68,7 +68,14 @@ public class ImagePullPolicyIT {
     assertThat(result).extracting(BuildResult::getOutput).asString()
         .contains("Using resource templates from")
         .contains("Adding revision history limit to 2")
-        .contains("validating");
+        .contains("validating")
+        .contains("SUMMARY")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/imagepullpolicy-deployment.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes.yml")
+        .contains("SUCCESS");
   }
 
   @Test
@@ -86,6 +93,13 @@ public class ImagePullPolicyIT {
     assertThat(result).extracting(BuildResult::getOutput).asString()
         .contains("Using resource templates from")
         .contains("Adding revision history limit to 2")
-        .contains("validating");
+        .contains("validating")
+        .contains("SUMMARY")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/imagepullpolicy-deploymentconfig.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/openshift.yml")
+        .contains("SUCCESS");
   }
 }

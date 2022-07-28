@@ -19,9 +19,11 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jkube.kit.common.KitLogger;
+import org.eclipse.jkube.kit.common.summary.Summary;
 import org.eclipse.jkube.kit.common.util.KubernetesHelper;
 import org.eclipse.jkube.kit.common.util.MavenUtil;
 import org.eclipse.jkube.kit.common.util.OpenshiftHelper;
+import org.eclipse.jkube.kit.common.util.SummaryUtil;
 import org.eclipse.jkube.kit.config.service.ApplyService;
 import org.eclipse.jkube.kit.enricher.api.util.KubernetesResourceUtil;
 import org.eclipse.jkube.maven.plugin.mojo.ManifestProvider;
@@ -175,6 +177,7 @@ public class ApplyMojo extends AbstractJKubeMojo implements ManifestProvider {
                 clusterKind = "OpenShift";
             }
             KubernetesResourceUtil.validateKubernetesMasterUrl(masterUrl);
+            SummaryUtil.setAppliedClusterUrl(masterUrl.toString());
             List<HasMetadata> entities = KubernetesHelper.loadResources(manifest);
 
             configureApplyService(kubernetes);

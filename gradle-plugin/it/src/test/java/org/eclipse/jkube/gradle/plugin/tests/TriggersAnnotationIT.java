@@ -40,7 +40,14 @@ public class TriggersAnnotationIT {
         .contains("Using resource templates from")
         .contains("Adding a default ReplicaSet")
         .contains("Adding revision history limit to 2")
-        .contains("validating");
+        .contains("validating")
+        .contains("SUMMARY")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/triggersannotation-replicaset.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes.yml")
+        .contains("SUCCESS");
   }
 
   @Test
@@ -56,6 +63,13 @@ public class TriggersAnnotationIT {
         .contains("Using resource templates from")
         .contains("Adding a default ReplicaSet")
         .contains("Adding revision history limit to 2")
-        .contains("validating");
+        .contains("validating")
+        .contains("SUMMARY")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/triggersannotation-replicaset.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/openshift.yml")
+        .contains("SUCCESS");
   }
 }

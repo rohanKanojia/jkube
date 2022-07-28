@@ -78,7 +78,16 @@ public class VertxIT {
         .contains("jkube-healthcheck-vertx: Adding readiness probe on port 8888")
         .contains("jkube-healthcheck-vertx: Adding liveness probe on port 8888")
         .contains("jkube-service-discovery: Using first mentioned service port '8888' ")
-        .contains("jkube-revision-history: Adding revision history limit to 2");
+        .contains("jkube-revision-history: Adding revision history limit to 2")
+        .contains("SUMMARY")
+        .contains("Generator Name : vertx")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/vertx-deployment.yml")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes/vertx-service.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/kubernetes.yml")
+        .contains("SUCCESS");
   }
 
   @Test
@@ -102,6 +111,15 @@ public class VertxIT {
         .contains("jkube-healthcheck-vertx: Adding readiness probe on port 8888")
         .contains("jkube-healthcheck-vertx: Adding liveness probe on port 8888")
         .contains("jkube-service-discovery: Using first mentioned service port '8888' ")
-        .contains("jkube-revision-history: Adding revision history limit to 2");
+        .contains("jkube-revision-history: Adding revision history limit to 2")
+        .contains("SUMMARY")
+        .contains("Generator Name : vertx")
+        .contains("Generated Resource Files:")
+        .contains("Individual :")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/vertx-deploymentconfig.yml")
+        .contains("build/classes/java/main/META-INF/jkube/openshift/vertx-service.yml")
+        .contains("Aggregate : ")
+        .contains("build/classes/java/main/META-INF/jkube/openshift.yml")
+        .contains("SUCCESS");
   }
 }

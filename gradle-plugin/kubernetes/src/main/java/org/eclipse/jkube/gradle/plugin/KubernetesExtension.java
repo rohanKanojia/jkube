@@ -259,6 +259,8 @@ public abstract class KubernetesExtension {
 
   public abstract Property<String> getWatchContainerNamePattern();
 
+  public abstract Property<Boolean> getSummaryEnabled();
+
   public WatchMode watchMode;
 
   public JKubeBuildStrategy buildStrategy;
@@ -702,6 +704,10 @@ public abstract class KubernetesExtension {
 
   public String getWatchShowLogsOrNull() {
     return getOrDefaultString("jkube.watch.showLogs", this::getWatchShowLogs, null);
+  }
+
+  public boolean getSummaryEnabledOrDefault() {
+    return getOrDefaultBoolean("jkube.summaryEnabled", this::getSummaryEnabled, true);
   }
 
   protected boolean getOrDefaultBoolean(String property, Supplier<Property<Boolean>> dslGetter, boolean defaultValue) {
