@@ -28,50 +28,36 @@ import io.fabric8.kubernetes.client.dsl.ExecListener;
 import io.fabric8.kubernetes.client.dsl.Execable;
 import io.fabric8.kubernetes.client.dsl.TtyExecable;
 import io.fabric8.kubernetes.client.dsl.internal.core.v1.PodOperationsImpl;
-import mockit.Expectations;
-import mockit.Mock;
-import mockit.MockUp;
-import mockit.Mocked;
 import org.apache.commons.io.IOUtils;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @SuppressWarnings("unused")
-class PodExecutorTest {
-
-  @Mocked
+public class PodExecutorTest {
   private ClusterAccess clusterAccess;
-  @Mocked
   private PodOperationsImpl podOperations;
-  @Mocked
   private KubernetesClient kubernetesClient;
 
   private PodExecutor podExecutor;
-
-  @BeforeEach
-  void setUp() {
-    // @formatter:off
-    new Expectations() {{
-      clusterAccess.getNamespace(); result = "default";
-      clusterAccess.createDefaultClient(); result = kubernetesClient;
-      kubernetesClient.pods().inNamespace(anyString).withName(anyString); result = podOperations;
-    }};
-    // @formatter:on
+  @Before
+  public void setUp() {
+    clusterAccess = mock(ClusterAccess.class);
+    podOperations = mock(PodOperationsImpl.class);
+    kubernetesClient = mock(KubernetesClient.class);
+    when(clusterAccess.getNamespace()).thenReturn("default");
+    when(clusterAccess.createDefaultClient()).thenReturn(kubernetesClient);
+    when(kubernetesClient.pods().inNamespace(anyString()).withName(anyString())).thenReturn(podOperations);
     podExecutor = new PodExecutor(clusterAccess, Duration.ZERO);
   }
 
   @Test
   void executeCommandInPodKubernetesError() {
     // Given
-    // @formatter:off
-    new Expectations() {{
-      kubernetesClient.pods().inNamespace(anyString).withName(anyString); result = new KubernetesClientException("Mocked Error");
-    }};
-    // @formatter:on
+    when(kubernetesClient.pods().inNamespace(anyString()).withName(anyString())).thenThrow(new KubernetesClientException("Mocked Error"));
     // When
     final WatchException result = assertThrows(WatchException.class,
         () -> podExecutor.executeCommandInPod(Collections.emptySet(), "sh"));
@@ -145,4 +131,6 @@ class PodExecutorTest {
       }
     };
   }
+
+
 }

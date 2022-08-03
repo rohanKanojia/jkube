@@ -35,30 +35,30 @@ import mockit.MockUp;
 import mockit.Mocked;
 import mockit.Verifications;
 import org.apache.commons.io.IOUtils;
+import org.junit.Before;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @SuppressWarnings({"ResultOfMethodCallIgnored", "unused"})
 class DockerImageWatcherTest {
 
-  @Mocked
   private WatcherContext watcherContext;
-  @Mocked
   private WatchService watchService;
 
   private DockerImageWatcher dockerImageWatcher;
   private WatchContext watchContext;
-
-  @BeforeEach
-  void setUp() {
+  @Before
+  public void setUp() {
+    watchContext = mock(WatchContext.class);
+    watchService = mock(WatchService.class);
     dockerImageWatcher = new DockerImageWatcher(watcherContext);
-    // @formatter:off
-    new Expectations() {{
-      watcherContext.getWatchContext(); result = new WatchContext(); minTimes = 0;
-    }};
-    // @formatter:on
+    when(watcherContext.getWatchContext()).thenReturn(new WatchContext());
     new MockUp<WatchService>() {
       @Mock
       void watch(WatchContext context, JKubeConfiguration buildContext, List<ImageConfiguration> images) {
@@ -109,6 +109,8 @@ class DockerImageWatcherTest {
       podExecutor.executeCommandInPod(null, "sh"); times = 1;
     }};
     // @formatter:on
+    verify(watchContext,times(1)).getJKubeServiceHub().getClusterAccess(),
+            (InputStream)any, Duration.ofMinutes(1), (Runnable)any
   }
 
   @Test
