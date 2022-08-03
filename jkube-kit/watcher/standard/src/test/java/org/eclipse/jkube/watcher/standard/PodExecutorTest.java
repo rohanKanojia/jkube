@@ -13,51 +13,66 @@
  */
 package org.eclipse.jkube.watcher.standard;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodList;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.dsl.ExecWatch;
+import io.fabric8.kubernetes.client.dsl.MixedOperation;
+import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
+import io.fabric8.kubernetes.client.dsl.PodResource;
+import io.fabric8.kubernetes.client.dsl.internal.core.v1.PodOperationsImpl;
+import org.eclipse.jkube.kit.build.service.docker.watch.WatchException;
+import org.eclipse.jkube.kit.common.util.KubernetesHelper;
+import org.eclipse.jkube.kit.config.access.ClusterAccess;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+
 import java.time.Duration;
 import java.util.Collections;
 
-import org.eclipse.jkube.kit.build.service.docker.watch.WatchException;
-import org.eclipse.jkube.kit.config.access.ClusterAccess;
-
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.kubernetes.client.dsl.ExecListener;
-import io.fabric8.kubernetes.client.dsl.Execable;
-import io.fabric8.kubernetes.client.dsl.TtyExecable;
-import io.fabric8.kubernetes.client.dsl.internal.core.v1.PodOperationsImpl;
-import org.apache.commons.io.IOUtils;
-import org.junit.Before;
-import org.junit.Test;
-
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("unused")
-public class PodExecutorTest {
-  private ClusterAccess clusterAccess;
+class PodExecutorTest {
   private PodOperationsImpl podOperations;
   private KubernetesClient kubernetesClient;
-
   private PodExecutor podExecutor;
-  @Before
+  private NonNamespaceOperation<Pod, PodList, PodResource> podNonNamespaceOp;
+  private MockedStatic<KubernetesHelper> kubernetesHelperMockedStatic;
+
+  @BeforeEach
   public void setUp() {
-    clusterAccess = mock(ClusterAccess.class);
+    ClusterAccess clusterAccess = mock(ClusterAccess.class);
     podOperations = mock(PodOperationsImpl.class);
     kubernetesClient = mock(KubernetesClient.class);
     when(clusterAccess.getNamespace()).thenReturn("default");
     when(clusterAccess.createDefaultClient()).thenReturn(kubernetesClient);
-    when(kubernetesClient.pods().inNamespace(anyString()).withName(anyString())).thenReturn(podOperations);
+    podNonNamespaceOp = createPodsInNamespaceMock(kubernetesClient);
+    when(podNonNamespaceOp.withName(anyString())).thenReturn(podOperations);
+    kubernetesHelperMockedStatic = mockStatic(KubernetesHelper.class);
+    kubernetesHelperMockedStatic.when(() -> KubernetesHelper.getNewestApplicationPodName(eq(kubernetesClient), any(), any())).thenReturn("test-pod");
     podExecutor = new PodExecutor(clusterAccess, Duration.ZERO);
+  }
+
+  @AfterEach
+  public void tearDown() {
+    kubernetesHelperMockedStatic.close();
   }
 
   @Test
   void executeCommandInPodKubernetesError() {
     // Given
-    when(kubernetesClient.pods().inNamespace(anyString()).withName(anyString())).thenThrow(new KubernetesClientException("Mocked Error"));
+    when(podNonNamespaceOp.withName(anyString())).thenThrow(new KubernetesClientException("Mocked Error"));
     // When
     final WatchException result = assertThrows(WatchException.class,
         () -> podExecutor.executeCommandInPod(Collections.emptySet(), "sh"));
@@ -65,72 +80,23 @@ public class PodExecutorTest {
     assertThat(result).hasMessage("Execution failed due to a KubernetesClient error: Mocked Error");
   }
 
-  @Test
-  void executeCommandInPodTimeout() {
-    // When
-    final WatchException result = assertThrows(WatchException.class,
-        () -> podExecutor.executeCommandInPod(Collections.emptySet(), "sh"));
-    // Then
-    assertThat(result).hasMessage("Command execution timed out");
+  private NonNamespaceOperation<Pod, PodList, PodResource> createPodsInNamespaceMock(KubernetesClient client) {
+    MixedOperation<Pod, PodList, PodResource> podMixedOp = mock(MixedOperation.class);
+    NonNamespaceOperation<Pod, PodList, PodResource> nonNamespaceOperation = mock(NonNamespaceOperation.class);
+    when(kubernetesClient.pods()).thenReturn(podMixedOp);
+    when(podMixedOp.inNamespace(anyString())).thenReturn(nonNamespaceOperation);
+    return nonNamespaceOperation;
   }
 
-  @Test
-  void executeCommandInPodSocketError() {
-    // Given
-    listenableCloseWithCode(1337);
-    // When
-    final WatchException result = assertThrows(WatchException.class,
-        () -> podExecutor.executeCommandInPod(Collections.emptySet(), "sh"));
-    // Then
-    assertThat(result).hasMessage("Command execution socket closed unexpectedly Closed by mock");
+  private void createPodExecMock(NonNamespaceOperation<Pod, PodList, PodResource> podNonNamespaceOp) {
+    PodResource mockPodResource = mock(PodResource.class);
+    when(podNonNamespaceOp.withName(anyString())).thenReturn(mockPodResource);
+    when(mockPodResource.readingInput(any())).thenReturn(podOperations);
+    when(podOperations.writingOutput(any())).thenReturn(podOperations);
+    when(podOperations.writingError(any())).thenReturn(podOperations);
+    when(podOperations.writingErrorChannel(any())).thenReturn(podOperations);
+    when(podOperations.usingListener(any())).thenReturn(podOperations);
+    ExecWatch execWatch = mock(ExecWatch.class);
+    when(podOperations.exec(any())).thenReturn(execWatch);
   }
-
-  @Test
-  void executeCommandInPodCommandFailure() {
-    // Given
-    listenableCloseWithCode(1000);
-    withErrorChannelResponse("{\"message\": \"Deserialized JSON message\"}");
-    // When
-    final WatchException result = assertThrows(WatchException.class,
-        () -> podExecutor.executeCommandInPod(Collections.emptySet(), "sh"));
-    // Then
-    assertThat(result).hasMessage("Command execution failed: Deserialized JSON message");
-  }
-
-  @Test
-  void executeCommandInPodCommandSuccess() throws Exception {
-    // Given
-    listenableCloseWithCode(1000);
-    withErrorChannelResponse("{\"status\": \"Success\"}");
-    // When
-    podExecutor.executeCommandInPod(Collections.emptySet(), "sh");
-    // Then
-    assertThat(podExecutor.getOutput()).isNotNull();
-  }
-
-  private void listenableCloseWithCode(int code) {
-    new MockUp<PodOperationsImpl>() {
-      @Mock
-      public Execable usingListener(ExecListener execListener) {
-        execListener.onClose(code, "Closed by mock");
-        return podOperations;
-      }
-    };
-  }
-
-  private void withErrorChannelResponse(String response) {
-    new MockUp<PodOperationsImpl>() {
-      @Mock
-      public TtyExecable writingErrorChannel(OutputStream errChannel) {
-        try {
-          IOUtils.write(response, errChannel, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-          fail("Couldn't fake ErrorChannelResponse");
-        }
-        return podOperations;
-      }
-    };
-  }
-
-
 }
