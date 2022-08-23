@@ -41,7 +41,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@SuppressWarnings({"ResultOfMethodCallIgnored", "unused"})
+@SuppressWarnings({"unused"})
 public class QuarkusHealthCheckEnricherTest {
   private JKubeEnricherContext context;
   private JavaProject javaProject;
@@ -73,6 +73,7 @@ public class QuarkusHealthCheckEnricherTest {
         .build());
     when(context.getProperties()).thenReturn(properties);
     when(context.getConfiguration().getProcessorConfig()).thenReturn(processorConfig);
+    when(context.getProject()).thenReturn(javaProject);
     when(javaProject.getProperties()).thenReturn(properties);
     when(javaProject.getOutputDirectory()).thenReturn(new File("/tmp/ignored"));
   }
