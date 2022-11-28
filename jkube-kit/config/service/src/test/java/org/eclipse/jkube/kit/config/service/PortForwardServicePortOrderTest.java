@@ -13,6 +13,7 @@
  */
 package org.eclipse.jkube.kit.config.service;
 
+import io.fabric8.kubernetes.client.LocalPortForward;
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
@@ -49,10 +50,11 @@ class PortForwardServicePortOrderTest {
         request.complete(r);
         return "";
       }).always();
-    PortForwardService.forwardPortAsync(kubernetesClient, "foo-pod", containerPort, localPort);
-    // When
-    try (final Socket ignored = new Socket(InetAddress.getLocalHost(), localPort)) {
-      // The socket connection triggers the KubernetesClient request to the k8s portforward endpoint
+    try (LocalPortForward localPortForward = PortForwardService.forwardPortAsync(kubernetesClient, "foo-pod", containerPort, localPort)) {
+      // When
+      try (final Socket ignored = new Socket(InetAddress.getLocalHost(), localPort)) {
+        // The socket connection triggers the KubernetesClient request to the k8s portforward endpoint
+      }
     }
     // Then
     assertThat(request).succeedsWithin(10, TimeUnit.SECONDS);
