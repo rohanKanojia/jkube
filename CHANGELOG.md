@@ -23,6 +23,7 @@ Usage:
 ### 1.12-SNAPSHOT
 * Fix #1179: Move storageClass related functionality out of VolumePermissionEnricher to PersistentVolumeClaimStorageClassEnricher
 * Fix #1273: Deprecate `jkube.io` annotation prefix in favor of `jkube.eclipse.org` for JKubeAnnotations
+* Fix #1929: Docker Image Name parsing fix
 * Fix #2079: Bump kubernetes-client to 6.5.0
 * Fix #2093: ClassCastException when extracting plugins from pom
 
