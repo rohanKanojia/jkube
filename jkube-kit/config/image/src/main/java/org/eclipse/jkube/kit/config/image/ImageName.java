@@ -40,6 +40,7 @@ import java.util.regex.Pattern;
  * @since 22.07.14
  */
 public class ImageName {
+    private static final Pattern VALID_DOMAIN_PATTERN = Pattern.compile("^([a-z0-9]+(-[a-z0-9]+)*\\.)+[a-z]{2,}$");
 
     // The repository part of the full image
     private String repository;
@@ -142,8 +143,16 @@ public class ImageName {
         return builder.toString();
     }
 
-    private boolean isRegistryPart(String part) {
+    private boolean containsPeriodOrColon(String part) {
+        return containsPeriod(part) || containsColon(part);
+    }
+
+    private boolean containsPeriod(String part) {
         return part.contains(".");
+    }
+
+    private boolean containsColon(String part) {
+        return part.contains(":");
     }
 
     /**
@@ -273,19 +282,34 @@ public class ImageName {
             registry = null;
             user = null;
             repository = parts[0];
-        } else if (parts.length == 2) {
-            if (isRegistryPart(parts[0])) {
-                assignRegistryAndRepository(parts);
+        } else if (parts.length >= 2) {
+            if (containsPeriodOrColon(parts[0])) {
+                if (parts.length > 2) {
+                    assignRegistryUserAndRepository(parts);
+                } else {
+                    checkWhetherFirstElementIsUserOrRegistryAndAssign(parts);
+                }
             } else {
-                assignUserAndRepository(parts);
-            }
-        } else if (parts.length >= 3) {
-            if (isRegistryPart(parts[0])) {
-                assignRegistryUserAndRepository(parts);
-            } else {
-                assignUserAndRepository(parts);
+                registry = null;
+                user = parts[0];
+                repository = rest;
             }
         }
+    }
+
+    private void checkWhetherFirstElementIsUserOrRegistryAndAssign(String[] parts) {
+        if (containsColon(parts[0]) || isWellKnownDomainName(parts[0])) {
+            assignRegistryAndRepository(parts);
+        } else {
+            assignUserAndRepository(parts);
+        }
+    }
+
+    private boolean isWellKnownDomainName(String name) {
+        return VALID_DOMAIN_PATTERN.matcher(name).matches() &&
+            (name.endsWith(".io") ||
+            name.endsWith(".com") ||
+            name.endsWith(".org"));
     }
 
     private void assignRegistryUserAndRepository(String[] parts) {
@@ -333,3 +357,4 @@ public class ImageName {
 
     private static final Pattern DIGEST_REGEXP = Pattern.compile("^sha256:[a-z0-9]{32,}$");
 }
+

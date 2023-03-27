@@ -21,7 +21,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 class ImageNameFullNameParseTest {
 
@@ -148,25 +147,6 @@ class ImageNameFullNameParseTest {
     ImageName imageName = new ImageName(providedImageName);
     SimpleImageName currentImageName = SimpleImageName.toSimpleImageName(imageName);
     assertThat(currentImageName).isEqualTo(expectedImageName);
-  }
-
-  public static Stream<Object[]> invalidData() {
-    return Stream.of(
-        new Object[][] {
-            {
-                "Repo and Name with special characters", "invalid.name-with__separators/eclipse_jkube"
-            },
-            {
-                "Repo, Name and Tag with special characters", "invalid.name-with__separators/eclipse_jkube:valid__tag-4.2"
-            },
-        });
-  }
-
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("invalidData")
-  void shouldFailedParseImageName(String testName, String providedImageName) {
-    assertThatCode(() -> new ImageName(providedImageName))
-        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Builder
