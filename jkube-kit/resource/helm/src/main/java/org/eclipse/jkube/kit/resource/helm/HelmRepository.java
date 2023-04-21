@@ -52,7 +52,8 @@ public class HelmRepository {
   public enum HelmRepoType {
     CHARTMUSEUM(HelmRepositoryConnectionUtils::getConnectionForUploadToChartMuseum),
     ARTIFACTORY(HelmRepositoryConnectionUtils::getConnectionForUploadToArtifactory),
-    NEXUS(HelmRepositoryConnectionUtils::getConnectionForUploadToNexus);
+    NEXUS(HelmRepositoryConnectionUtils::getConnectionForUploadToNexus),
+    OCI(HelmRepositoryConnectionUtils::getConnectionForUploadToOCI);
 
     private final ConnectionCreator connectionCreator;
 

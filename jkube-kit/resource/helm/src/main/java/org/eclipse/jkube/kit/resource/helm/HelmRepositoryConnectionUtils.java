@@ -50,6 +50,10 @@ public class HelmRepositoryConnectionUtils {
     return connection;
   }
 
+  public static HttpURLConnection getConnectionForUploadToOCI(File file, HelmRepository helmRepository) {
+    throw new UnsupportedOperationException(String.format("Can't upload %s to %s, Use OCIUploader for uploads to OCI registry", file.getName(), helmRepository.getUrl()));
+  }
+
   private static HttpURLConnection createConnection(HelmRepository repository, String url) throws IOException {
     final HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
     connection.setDoOutput(true);

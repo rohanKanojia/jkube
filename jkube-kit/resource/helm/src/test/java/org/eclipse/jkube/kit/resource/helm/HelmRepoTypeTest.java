@@ -25,9 +25,11 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 class HelmRepoTypeTest {
 
@@ -127,5 +129,19 @@ class HelmRepoTypeTest {
         .hasFieldOrPropertyWithValue("doOutput", true)
         .extracting(HttpURLConnection::getRequestProperties)
         .hasFieldOrPropertyWithValue("Content-Type", Collections.singletonList("application/gzip"));
+  }
+
+  @Test
+  void createConnection_withOCI_shouldThrowException() throws IOException {
+    // Given
+    HelmRepository.HelmRepoType repoType = HelmRepository.HelmRepoType.OCI;
+    Path filePath = temporaryFolder.toPath().resolve("chart.tgz");
+    HelmRepository helmRepository = helmRepositoryBuilder.build();
+    File file = Files.createFile(filePath).toFile();
+
+    // When + Then
+    assertThatExceptionOfType(UnsupportedOperationException.class)
+        .isThrownBy(() -> repoType.createConnection(file, helmRepository))
+        .withMessage("Can't upload chart.tgz to https://example.com/base/, Use OCIUploader for uploads to OCI registry");
   }
 }

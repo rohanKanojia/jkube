@@ -155,6 +155,35 @@ class HelmServiceTest {
   }
 
   @Test
+  void uploadChart_withValidOCIRepository_shouldUpload()
+      throws IOException, BadUploadException {
+    try (MockedConstruction<OCIUploader> ociUploaderMockedConstruction = mockConstruction(OCIUploader.class,
+        (mock, ctx) -> doNothing().when(mock).uploadSingle(any(File.class), any(), any()))) {
+      // Given
+      final HelmRepository helmRepository = completeValidRepository().name("stable-repo").type(HelmRepository.HelmRepoType.OCI).build();
+      helmConfig
+          .types(Collections.singletonList(HelmType.KUBERNETES))
+          .chart("chartName")
+          .version("1337")
+          .chartExtension("tar.gz")
+          .outputDir("target")
+          .tarballOutputDir("target")
+          .snapshotRepository(HelmRepository.builder().name("Snapshot-Repo").build())
+          .stableRepository(helmRepository);
+      // When
+      helmService.uploadHelmChart(helmConfig.build());
+      // Then
+      ArgumentCaptor<File> argumentCaptor = ArgumentCaptor.forClass(File.class);
+      assertThat(ociUploaderMockedConstruction.constructed()).hasSize(1);
+      OCIUploader constructedOCIUploader = ociUploaderMockedConstruction.constructed().get(0);
+      verify(constructedOCIUploader).uploadSingle(argumentCaptor.capture(), eq(helmConfig.build()), eq(helmRepository));
+      String fileName = "chartName-1337.tar.gz";
+      assertThat(argumentCaptor.getValue())
+          .hasName(fileName);
+    }
+  }
+
+  @Test
   void uploadHelmChart_withInvalidRepositoryConfiguration_shouldFail() {
     // Given
     final HelmConfig helm = helmConfig.chart("chart").version("1337-SNAPSHOT")

@@ -14,13 +14,23 @@
 package org.eclipse.jkube.kit.common.util;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
+import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -30,9 +40,13 @@ import io.fabric8.kubernetes.client.http.HttpClient;
 import io.fabric8.kubernetes.client.http.HttpResponse;
 import io.fabric8.kubernetes.client.http.StandardHttpHeaders;
 import io.fabric8.kubernetes.client.utils.HttpClientUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jkube.kit.common.HttpURLConnectionResponse;
 import org.eclipse.jkube.kit.common.KitLogger;
 
 import static org.apache.commons.io.IOUtils.EOF;
+import static org.apache.commons.lang3.StringUtils.strip;
 
 /**
  *
@@ -128,6 +142,106 @@ public class IoUtil {
         }
 
         return null;
+    }
+
+    public static String getHeaderValueFromHeaders(Map<String, List<String>> headers, String key) {
+        String headerValue = null;
+        if (headers.containsKey(key)) {
+            headerValue = headers.get(key).get(0);
+        } else if (headers.containsKey(key.toLowerCase(Locale.ROOT))) {
+            headerValue = headers.get(key.toLowerCase(Locale.ROOT)).get(0);
+        }
+        return headerValue;
+    }
+
+    public static String createFormDataStringFromMap(Map<String, String> formData) throws UnsupportedEncodingException {
+        StringBuilder result = new StringBuilder();
+        boolean first = true;
+        for (Map.Entry<String, String> e : formData.entrySet()) {
+            if (first) {
+                first = false;
+            } else {
+                result.append("&");
+            }
+            result.append(URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8.name()));
+            result.append("=");
+            result.append(URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8.name()));
+        }
+        return result.toString();
+    }
+
+    public static Map<String, String> parseWwwAuthenticateHeaderToMap(String wwwAuthenticateHeader) {
+        String[] wwwAuthenticateHeaders = wwwAuthenticateHeader.split(",");
+        Map<String, String> result = new HashMap<>();
+        for (String challenge : wwwAuthenticateHeaders) {
+            if (challenge.contains("=")) {
+                String[] challengeParts = challenge.split("=");
+                if (challengeParts.length == 2) {
+                    result.put(challengeParts[0], strip(challengeParts[1], "\""));
+                }
+            }
+        }
+        return result;
+    }
+
+    public static HttpURLConnectionResponse doHttpRequest(KitLogger logger, String method, String url, Map<String, String> headers) throws IOException {
+        return doHttpRequest(logger, method, url, headers, null, null);
+    }
+
+    public static HttpURLConnectionResponse doHttpRequest(KitLogger logger, String method, String url, Map<String, String> headers, String requestBodyPayload, File fileToUpload) throws IOException {
+        final HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        logger.verbose("%s %s", method, url);
+        connection.setDoOutput(true);
+        connection.setRequestMethod(method);
+        logger.debug("request headers:");
+        for (Map.Entry<String, String> header : headers.entrySet()) {
+            logger.debug(header.getKey(), header.getValue());
+            connection.setRequestProperty(header.getKey(), header.getValue());
+        }
+        if (fileToUpload != null) {
+            try (FileInputStream fileInputStream = new FileInputStream(fileToUpload)) {
+                IOUtils.copy(fileInputStream, connection.getOutputStream());
+            }
+        } else if (StringUtils.isNotBlank(requestBodyPayload)) {
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = requestBodyPayload.getBytes(Charset.defaultCharset());
+                os.write(input, 0, input.length);
+            }
+        }
+
+        int responseCode = connection.getResponseCode();
+
+        logger.debug(Integer.toString(responseCode));
+        HttpURLConnectionResponse.HttpURLConnectionResponseBuilder responseBuilder = HttpURLConnectionResponse.builder();
+        responseBuilder.code(responseCode);
+        if (StringUtils.isNotBlank(connection.getResponseMessage())) {
+            responseBuilder.message(connection.getResponseMessage());
+        }
+        if (connection.getHeaderFields() != null && !connection.getHeaderFields().isEmpty()) {
+            logger.debug("Response Headers");
+            logger.debug(connection.getHeaderFields().toString());
+            responseBuilder.headers(connection.getHeaderFields());
+        }
+        if (connection.getErrorStream() != null) {
+            responseBuilder.error(IOUtils.toString(connection.getErrorStream(), Charset.defaultCharset()));
+        }
+        if (isResponseSuccessful(responseCode) && connection.getInputStream() != null) {
+            responseBuilder.body(IOUtils.toString(connection.getInputStream(), Charset.defaultCharset()));
+        }
+        connection.disconnect();
+        return responseBuilder.build();
+    }
+
+    public static String appendQueryParam(String originalUrl, String key, String value) throws UnsupportedEncodingException {
+        char queryToken = '?';
+        if (originalUrl.indexOf(queryToken) >= 0) {
+            queryToken = '&';
+        }
+        return originalUrl + queryToken + key + "=" + URLEncoder.encode(value, "UTF-8");
+    }
+
+    public static boolean isResponseSuccessful(int responseCode) {
+        return responseCode < HttpURLConnection.HTTP_MULT_CHOICE;
     }
 
     // ========================================================================================
