@@ -56,6 +56,16 @@ need to add a server entry for your repo like this:
 ----
 endif::[]
 
+In case you want to push to https://opencontainers.org/[OCI] registries, you'd need to specify registry type as `OCI` along
+with url of the registry with user namespace (if applicable). Here is an example:
+
+ifeval::["{plugin-type}" == "maven"]
+include::maven/_helm_oci_repository.adoc[]
+endif::[]
+ifeval::["{plugin-type}" == "gradle"]
+include::gradle/_helm_oci_repository.adoc[]
+endif::[]
+
 
 This configuration section knows the following sub-elements in order to configure your Helm chart.
 

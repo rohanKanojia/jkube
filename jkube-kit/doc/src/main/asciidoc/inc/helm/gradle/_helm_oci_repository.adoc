@@ -1,0 +1,13 @@
+.Example Helm Push configuration for OCI registries
+[source,groovy,indent=0,subs="verbatim,quotes,attributes"]
+----
+{pluginExtension} {
+  helm {
+    stableRepository {
+        name = 'quay.io'
+        url = 'https://quay.io/myusername'
+        type = 'OCI'
+    }
+  }
+}
+----

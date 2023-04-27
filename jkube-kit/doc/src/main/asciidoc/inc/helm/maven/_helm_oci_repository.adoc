@@ -1,0 +1,15 @@
+.Example Helm Push configuration for OCI registries
+[source,xml,indent=0,subs="verbatim,quotes,attributes"]
+----
+<plugin>
+  <configuration>
+    <helm>
+      <stableRepository>
+          <name>quay.io</name>
+          <url>https://quay.io/myusername</url>
+          <type>OCI</type>
+      </stableRepository>
+    </helm>
+  </configuration>
+</plugin>
+----
