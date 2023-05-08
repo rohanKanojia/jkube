@@ -13,7 +13,7 @@
  */
 package org.eclipse.jkube.kit.common.util;
 
-import org.eclipse.jkube.kit.common.HttpURLConnectionResponse;
+import io.fabric8.kubernetes.client.http.HttpResponse;
 import org.eclipse.jkube.kit.common.KitLogger;
 import org.eclipse.jkube.kit.common.TestHttpStaticServer;
 import org.junit.jupiter.api.BeforeEach;
@@ -108,16 +108,6 @@ class IoUtilTest {
     }
 
     @Test
-    void isResponseSuccessful_whenSuccessfulResponse_thenReturnTrue() {
-        assertThat(IoUtil.isResponseSuccessful(HTTP_OK)).isTrue();
-    }
-
-    @Test
-    void isResponseSuccessful_whenFailureResponse_thenReturnTrue() {
-        assertThat(IoUtil.isResponseSuccessful(HTTP_NOT_FOUND)).isFalse();
-    }
-
-    @Test
     void appendQueryParam_whenUrlWithNoQueryParamProvided_thenAddQueryParam() throws UnsupportedEncodingException {
         assertThat(IoUtil.appendQueryParam("https://r.example.com", "foo", "bar"))
             .isEqualTo("https://r.example.com?foo=bar");
@@ -200,14 +190,14 @@ class IoUtilTest {
             Map<String, String> requestHeaders = Collections.singletonMap("User-Agent", "EclipseJKube");
 
             // When
-            HttpURLConnectionResponse response = IoUtil.doHttpRequest(logger, "GET", serverUrl, requestHeaders);
+            HttpResponse<byte[]> response = IoUtil.doHttpRequest(logger, "GET", serverUrl, requestHeaders);
 
             // Then
             assertThat(response)
                 .isNotNull()
-                .hasFieldOrPropertyWithValue("code", HTTP_OK)
-                .hasFieldOrPropertyWithValue("body", "READY")
-                .hasFieldOrPropertyWithValue("message", "OK");
+                .satisfies(r -> assertThat(r.code()).isEqualTo(HTTP_OK))
+                .satisfies(r -> assertThat(new String(r.body())).isEqualTo("READY"))
+                .satisfies(r -> assertThat(r.message()).isEqualTo("OK"));
         }
     }
 
@@ -220,13 +210,13 @@ class IoUtilTest {
             Map<String, String> requestHeaders = Collections.singletonMap("User-Agent", "EclipseJKube");
 
             // When
-            HttpURLConnectionResponse response = IoUtil.doHttpRequest(logger, "GET", serverUrl, requestHeaders);
+            HttpResponse<byte[]> response = IoUtil.doHttpRequest(logger, "GET", serverUrl, requestHeaders);
 
             // Then
             assertThat(response)
                 .isNotNull()
-                .hasFieldOrPropertyWithValue("code", HTTP_NOT_FOUND)
-                .hasFieldOrPropertyWithValue("message", "Not Found");
+                .satisfies(r -> assertThat(r.code()).isEqualTo(HTTP_NOT_FOUND))
+                .satisfies(r -> assertThat(r.message()).isEqualTo("Not Found"));
         }
     }
 }

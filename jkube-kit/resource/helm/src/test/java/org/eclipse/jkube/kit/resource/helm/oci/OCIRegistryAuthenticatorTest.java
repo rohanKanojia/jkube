@@ -13,9 +13,8 @@
  */
 package org.eclipse.jkube.kit.resource.helm.oci;
 
-import org.apache.commons.lang3.StringUtils;
+import io.fabric8.kubernetes.client.http.HttpResponse;
 import org.apache.http.HttpHeaders;
-import org.eclipse.jkube.kit.common.HttpURLConnectionResponse;
 import org.eclipse.jkube.kit.common.KitLogger;
 import org.eclipse.jkube.kit.common.util.Base64Util;
 import org.eclipse.jkube.kit.common.util.IoUtil;
@@ -171,20 +170,8 @@ class OCIRegistryAuthenticatorTest {
     }
   }
 
-  private HttpURLConnectionResponse createNewHttpResponse(int responseCode, String responseBody, Map<String, List<String>> responseHeaders, String error) {
-    HttpURLConnectionResponse.HttpURLConnectionResponseBuilder responseBuilder = HttpURLConnectionResponse.builder();
-    responseBuilder.code(responseCode);
-    if (StringUtils.isNotBlank(responseBody)) {
-      responseBuilder.body(responseBody);
-    }
-    if (responseHeaders != null) {
-      responseBuilder.headers(responseHeaders);
-    }
-    if (StringUtils.isNotBlank(error)) {
-      responseBuilder.error(error);
-    }
-
-    return responseBuilder.build();
+  private HttpResponse<byte[]> createNewHttpResponse(int responseCode, String responseBody, Map<String, List<String>> responseHeaders, String message) {
+    return new TestHttpResponse(responseCode, responseHeaders, responseBody, message);
   }
 
   private String createWwwHeader(String authUrl, String service) {

@@ -26,10 +26,10 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.spy;
@@ -89,7 +89,7 @@ class OCIUploaderTest {
       when(mock.getBaseUrl()).thenReturn("https://r.example.com");
       when(mock.isLayerUploadedAlready(anyString(), anyString())).thenReturn(false);
       when(mock.initiateUploadProcess(anyString())).thenReturn("https://r.example.com/v2/myuser/blobs/uploads/random-uuid?state=testing");
-      when(mock.uploadBlob(anyString(), anyString(), eq(chartFile), isNull()))
+      when(mock.uploadBlob(anyString(), anyString(), anyLong(), anyString(), any()))
           .thenThrow(new BadUploadException("invalid upload data"));
     })) {
       // When
@@ -105,8 +105,8 @@ class OCIUploaderTest {
       when(mock.getBaseUrl()).thenReturn("https://r.example.com");
       when(mock.isLayerUploadedAlready(anyString(), anyString())).thenReturn(false);
       when(mock.initiateUploadProcess(anyString())).thenReturn("https://r.example.com/v2/myuser/blobs/uploads/random-uuid?state=testing");
-      when(mock.uploadBlob(anyString(), anyString(), eq(chartFile), isNull())).thenReturn("sha256:charttarballdigest");
-      when(mock.uploadBlob(anyString(), anyString(), isNull(), anyString())).thenReturn("sha256:chartconfigdigest");
+      when(mock.uploadBlob(anyString(), anyString(), anyLong(), isNull(), any())).thenReturn("sha256:charttarballdigest");
+      when(mock.uploadBlob(anyString(), anyString(), anyLong(), anyString(), isNull())).thenReturn("sha256:chartconfigdigest");
       when(mock.uploadOCIManifest(anyString(), anyString(), anyString(), anyString(), anyInt(), anyLong())).thenReturn("sha256:uploadmanifestdigest");
     })) {
       // When

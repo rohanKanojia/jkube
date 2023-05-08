@@ -40,32 +40,33 @@ public class OCIUploader {
   }
 
   private void uploadChartToOCIRegistry(OCIRegistryClient oci, Chart chartConfig, HelmRepository repository, File file) throws IOException, BadUploadException {
+    String chartMetadataContentPayload = objectMapper.writeValueAsString(chartConfig);
     String chartTarballBlobDigest = SHAUtil.generateSHA256(file);
-    String chartConfigBlobDigest = SHAUtil.generateSHA256(objectMapper.writeValueAsString(chartConfig));
-    String chartConfigContentPayload = objectMapper.writeValueAsString(chartConfig);
-    int chartConfigPayloadSize = chartConfigContentPayload.getBytes(Charset.defaultCharset()).length;
+    String chartMetadataBlobDigest = SHAUtil.generateSHA256(chartMetadataContentPayload);
+    long chartMetadataPayloadSize = chartMetadataContentPayload.getBytes(Charset.defaultCharset()).length;
+    long chartTarballSize = file.length();
 
-    String chartTarballDockerContentDigest = uploadBlobIfNotExist(oci, chartConfig.getName(), chartTarballBlobDigest, file, null);
-    String chartConfigDockerContentDigest = uploadBlobIfNotExist(oci, chartConfig.getName(), chartConfigBlobDigest, null, chartConfigContentPayload);
+    String chartTarballDockerContentDigest = uploadBlobIfNotExist(oci, chartConfig.getName(), chartTarballBlobDigest, chartTarballSize, null, file);
+    String chartConfigDockerContentDigest = uploadBlobIfNotExist(oci, chartConfig.getName(), chartMetadataBlobDigest, chartMetadataPayloadSize, chartMetadataContentPayload, null);
 
-    String manifestDockerContentDigest = oci.uploadOCIManifest(chartConfig.getName(), chartConfig.getVersion(), chartConfigDockerContentDigest, chartTarballDockerContentDigest, chartConfigPayloadSize, file.length());
+    String manifestDockerContentDigest = oci.uploadOCIManifest(chartConfig.getName(), chartConfig.getVersion(), chartConfigDockerContentDigest, chartTarballDockerContentDigest, chartMetadataPayloadSize, chartTarballSize);
     logger.info("Pushed: %s/%s/%s:%s", oci.getBaseUrl(), repository.getUsername(), chartConfig.getName(), chartConfig.getVersion());
     logger.info("Digest: %s", manifestDockerContentDigest);
   }
 
-  private String uploadBlobIfNotExist(OCIRegistryClient oci, String chartName, String blob, File blobContentFile, String blobContentStr) throws IOException, BadUploadException {
+  private String uploadBlobIfNotExist(OCIRegistryClient oci, String chartName, String blob, long blobSize, String blobContentStr, File blobFile) throws IOException, BadUploadException {
     boolean alreadyUploaded = oci.isLayerUploadedAlready(chartName, blob);
     if (alreadyUploaded) {
       logger.info("Skipping push, BLOB already exists on target registry: %s", blob);
       return String.format("sha256:%s", blob);
     } else {
-      return uploadBlob(oci, chartName, blob, blobContentFile, blobContentStr);
+      return uploadBlob(oci, chartName, blob, blobSize, blobContentStr, blobFile);
     }
   }
 
-  private String uploadBlob(OCIRegistryClient oci, String chartName, String blob, File blobContentFile, String blobContentStr) throws IOException, BadUploadException {
+  private String uploadBlob(OCIRegistryClient oci, String chartName, String blob, long blobSize, String blobContentStr, File blobFile) throws IOException, BadUploadException {
     String uploadUrl = oci.initiateUploadProcess(chartName);
-    return oci.uploadBlob(uploadUrl, blob, blobContentFile, blobContentStr);
+    return oci.uploadBlob(uploadUrl, blob, blobSize, blobContentStr, blobFile);
   }
 
   private Chart createChartFromHelmConfig(HelmConfig helmConfig) {

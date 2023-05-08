@@ -14,10 +14,10 @@
 package org.eclipse.jkube.kit.resource.helm.oci;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.fabric8.kubernetes.client.http.HttpResponse;
 import io.fabric8.kubernetes.client.utils.Serialization;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
-import org.eclipse.jkube.kit.common.HttpURLConnectionResponse;
 import org.eclipse.jkube.kit.common.KitLogger;
 import org.eclipse.jkube.kit.common.util.Base64Util;
 import org.eclipse.jkube.kit.resource.helm.HelmRepository;
@@ -50,10 +50,10 @@ public class OCIRegistryAuthenticator {
   }
 
   public boolean authenticate(String url) throws IOException {
-    HttpURLConnectionResponse response = doHttpRequest(logger, "HEAD", url, Collections.emptyMap());
-    int responseCode = response.getCode();
+    HttpResponse<byte[]> response = doHttpRequest(logger, "HEAD", url, Collections.emptyMap());
+    int responseCode = response.code();
     if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED) {
-      String wwwAuthenticateHeaderField = getHeaderValueFromHeaders(response.getHeaders(), HttpHeaders.WWW_AUTHENTICATE);
+      String wwwAuthenticateHeaderField = getHeaderValueFromHeaders(response.headers(), HttpHeaders.WWW_AUTHENTICATE);
       if (StringUtils.isBlank(wwwAuthenticateHeaderField)) {
         throw new IllegalStateException("Got 401 but no " + HttpHeaders.WWW_AUTHENTICATE + " found in response headers ");
       }
@@ -87,11 +87,11 @@ public class OCIRegistryAuthenticator {
     String authUrlWithQueryParams = String.format("%s?service=%s&scope=%s", url, service, scope);
     Map<String, String> requestHeaders = new HashMap<>();
     requestHeaders.put(HttpHeaders.AUTHORIZATION, String.format("Basic %s", Base64Util.encodeToString(repository.getUsername() + ":" + repository.getPassword())));
-    HttpURLConnectionResponse response = doHttpRequest(logger, "GET", authUrlWithQueryParams, requestHeaders);
+    HttpResponse<byte[]> response = doHttpRequest(logger, "GET", authUrlWithQueryParams, requestHeaders);
 
-    int responseCode = response.getCode();
+    int responseCode = response.code();
     if (responseCode == HttpURLConnection.HTTP_OK) {
-      return parseAccessTokenFromResponse(response.getBody());
+      return parseAccessTokenFromResponse(new String(response.body()));
     }
     return false;
   }
@@ -102,13 +102,12 @@ public class OCIRegistryAuthenticator {
     requestHeaders.put(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
     requestHeaders.put(HttpHeaders.CONTENT_LENGTH, Integer.toString(postDataString.getBytes().length));
 
-    HttpURLConnectionResponse response = doHttpRequest(logger, "POST", url, requestHeaders, postDataString, null);
+    HttpResponse<byte[]> response = doHttpRequest(logger, "POST", url, requestHeaders, postDataString, null);
 
-    int responseCode = response.getCode();
-    if (responseCode == HttpURLConnection.HTTP_OK) {
-      return parseAccessTokenFromResponse(response.getBody());
+    if (response.isSuccessful()) {
+      return parseAccessTokenFromResponse(new String(response.body()));
     } else {
-      logger.error(response.getError());
+      logger.error(response.message());
     }
     return false;
   }

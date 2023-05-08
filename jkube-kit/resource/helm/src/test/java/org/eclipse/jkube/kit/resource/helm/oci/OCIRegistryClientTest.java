@@ -13,9 +13,8 @@
  */
 package org.eclipse.jkube.kit.resource.helm.oci;
 
-import org.apache.commons.lang3.StringUtils;
+import io.fabric8.kubernetes.client.http.HttpResponse;
 import org.apache.http.HttpHeaders;
-import org.eclipse.jkube.kit.common.HttpURLConnectionResponse;
 import org.eclipse.jkube.kit.common.KitLogger;
 import org.eclipse.jkube.kit.common.util.IoUtil;
 import org.eclipse.jkube.kit.resource.helm.BadUploadException;
@@ -43,7 +42,6 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -60,8 +58,8 @@ class OCIRegistryClientTest {
   private String chartVersion;
   private String chartTarballBlobDigest;
   private String chartConfigBlobDigest;
-  private int chartConfigPayloadSizeInBytes;
-  private int chartTarballContentSizeInBytes;
+  private long chartConfigPayloadSizeInBytes;
+  private long chartTarballContentSizeInBytes;
   private File chartFile;
   private MockedStatic<IoUtil> ioUtilMockedStatic;
   @TempDir
@@ -86,7 +84,6 @@ class OCIRegistryClientTest {
     ioUtilMockedStatic = mockStatic(IoUtil.class);
     ioUtilMockedStatic.when(() -> IoUtil.getHeaderValueFromHeaders(anyMap(), anyString())).thenCallRealMethod();
     ioUtilMockedStatic.when(() -> IoUtil.appendQueryParam(anyString(), anyString(), anyString())).thenCallRealMethod();
-    ioUtilMockedStatic.when(() -> IoUtil.isResponseSuccessful(anyInt())).thenCallRealMethod();
     oci = new OCIRegistryClient(logger, helmRepository, ociRegistryAuthenticator);
   }
 
@@ -173,7 +170,7 @@ class OCIRegistryClientTest {
   void uploadOCIManifest_whenManifestSuccessfullyPushed_thenReturnDockerContentDigest() throws BadUploadException, IOException {
     // Given
     String responseDockerContentDigestHeader = "sha256:createdmanifestdigest";
-    ioUtilMockedStatic.when(() -> IoUtil.doHttpRequest(eq(logger), eq("PUT"), eq("https://r.example.com/v2/myuser/test-chart/manifests/0.0.1"), anyMap(), anyString(), isNull()))
+    ioUtilMockedStatic.when(() -> IoUtil.doHttpRequest(eq(logger), eq("PUT"), eq("https://r.example.com/v2/myuser/test-chart/manifests/0.0.1"), anyMap(), anyString(), any()))
         .thenReturn(createHttpResponseWithCode(HTTP_CREATED, Collections.singletonMap("docker-content-digest", Collections.singletonList(responseDockerContentDigestHeader)), null));
 
     // When
@@ -186,7 +183,7 @@ class OCIRegistryClientTest {
   @Test
   void uploadOCIManifest_whenRegistryRejectedManifest_thenThrowException() throws IOException {
     // Given
-    ioUtilMockedStatic.when(() -> IoUtil.doHttpRequest(eq(logger), eq("PUT"), eq("https://r.example.com/v2/myuser/test-chart/manifests/0.0.1"), anyMap(), anyString(), isNull()))
+    ioUtilMockedStatic.when(() -> IoUtil.doHttpRequest(eq(logger), eq("PUT"), eq("https://r.example.com/v2/myuser/test-chart/manifests/0.0.1"), anyMap(), anyString(), any()))
         .thenReturn(createHttpResponseWithCode(HTTP_BAD_REQUEST, null, "invalid manifest"));
 
     // When + Then
@@ -198,7 +195,7 @@ class OCIRegistryClientTest {
   @Test
   void uploadOCIManifest_whenManifestSuccessfullyPushedButNoDockerContentDigest_thenThrowException() throws BadUploadException, IOException {
     // Given
-    ioUtilMockedStatic.when(() -> IoUtil.doHttpRequest(eq(logger), eq("PUT"), eq("https://r.example.com/v2/myuser/test-chart/manifests/0.0.1"), anyMap(), anyString(), isNull()))
+    ioUtilMockedStatic.when(() -> IoUtil.doHttpRequest(eq(logger), eq("PUT"), eq("https://r.example.com/v2/myuser/test-chart/manifests/0.0.1"), anyMap(), anyString(), any()))
         .thenReturn(createHttpResponseWithCode(HTTP_CREATED, Collections.emptyMap(), null));
 
     // When
@@ -213,11 +210,11 @@ class OCIRegistryClientTest {
     String blobUploadUrl = "https://r.example.com/v2/myuser/test-chart/blobs/uploads/17f1053c-fcd7-47a7-a34b-bbf23bbdf906?_state=XZnxHKS";
     Map<String, List<String>> responseHeaders = new HashMap<>();
     responseHeaders.put("Docker-Content-Digest", Collections.singletonList("sha256:016b77128b6bdf63ce4000e38fc36dcb15dfd6feea2d244a2c797a2d4f75a2de"));
-    ioUtilMockedStatic.when(() -> IoUtil.doHttpRequest(eq(logger), eq("PUT"), anyString(), anyMap(), isNull(), any(File.class)))
+    ioUtilMockedStatic.when(() -> IoUtil.doHttpRequest(eq(logger), eq("PUT"), anyString(), anyMap(), isNull(), any()))
         .thenReturn(createHttpResponseWithCode(HTTP_CREATED, responseHeaders, null));
 
     // When
-    String dockerContentDigest = oci.uploadBlob(blobUploadUrl, chartTarballBlobDigest, chartFile, null);
+    String dockerContentDigest = oci.uploadBlob(blobUploadUrl, chartTarballBlobDigest, 10, "test-tarball-content", chartFile);
 
     // Then
     assertThat(dockerContentDigest)
@@ -228,12 +225,12 @@ class OCIRegistryClientTest {
   void uploadBlob_whenBlobRejectedByRegistry_thenThrowException() throws BadUploadException, IOException {
     // Given
     String blobUploadUrl = "https://r.example.com/v2/myuser/test-chart/blobs/uploads/17f1053c-fcd7-47a7-a34b-bbf23bbdf906?_state=XZnxHKS";
-    ioUtilMockedStatic.when(() -> IoUtil.doHttpRequest(eq(logger), eq("PUT"), anyString(), anyMap(), isNull(), any(File.class)))
+    ioUtilMockedStatic.when(() -> IoUtil.doHttpRequest(eq(logger), eq("PUT"), anyString(), anyMap(), isNull(), any()))
         .thenReturn(createHttpResponseWithCode(HTTP_BAD_REQUEST, Collections.emptyMap(), "invalid data"));
 
     // When + Then
     assertThatExceptionOfType(BadUploadException.class)
-        .isThrownBy(() -> oci.uploadBlob(blobUploadUrl, chartTarballBlobDigest, chartFile, null))
+        .isThrownBy(() -> oci.uploadBlob(blobUploadUrl, chartTarballBlobDigest, 10, null, chartFile))
         .withMessage("invalid data");
   }
 
@@ -241,12 +238,12 @@ class OCIRegistryClientTest {
   void uploadBlob_whenBlobSuccessfullyPushedToRegistryButNoDockerContentDigest_thenThrowException() throws BadUploadException, IOException {
     // Given
     String blobUploadUrl = "https://r.example.com/v2/myuser/test-chart/blobs/uploads/17f1053c-fcd7-47a7-a34b-bbf23bbdf906?_state=XZnxHKS";
-    ioUtilMockedStatic.when(() -> IoUtil.doHttpRequest(eq(logger), eq("PUT"), anyString(), anyMap(), isNull(), any(File.class)))
+    ioUtilMockedStatic.when(() -> IoUtil.doHttpRequest(eq(logger), eq("PUT"), anyString(), anyMap(), isNull(), any()))
         .thenReturn(createHttpResponseWithCode(HTTP_CREATED, Collections.emptyMap(), null));
 
     // When + Then
     assertThatIllegalStateException()
-        .isThrownBy(() -> oci.uploadBlob(blobUploadUrl, chartTarballBlobDigest, chartFile, null))
+        .isThrownBy(() -> oci.uploadBlob(blobUploadUrl, chartTarballBlobDigest, chartTarballContentSizeInBytes, null, chartFile))
         .withMessage("No Docker-Content-Digest header found in upload response");
   }
 
@@ -278,15 +275,7 @@ class OCIRegistryClientTest {
     assertThat(result).isFalse();
   }
 
-  private HttpURLConnectionResponse createHttpResponseWithCode(int responseCode, Map<String, List<String>> headers, String error) {
-    HttpURLConnectionResponse.HttpURLConnectionResponseBuilder responseBuilder = HttpURLConnectionResponse.builder();
-    responseBuilder.code(responseCode);
-    if (headers != null) {
-      responseBuilder.headers(headers);
-    }
-    if (StringUtils.isNotBlank(error)) {
-      responseBuilder.error(error);
-    }
-    return responseBuilder.build();
+  private HttpResponse<byte[]> createHttpResponseWithCode(int responseCode, Map<String, List<String>> headers, String error) {
+    return new TestHttpResponse(responseCode, headers, null, error);
   }
 }
