@@ -13,22 +13,31 @@
  */
 package org.eclipse.jkube.gradle.plugin.task;
 
+import java.io.IOException;
+import java.util.Date;
+import java.util.Optional;
+
 import javax.inject.Inject;
 
+import org.eclipse.jkube.gradle.plugin.GradleUtil;
 import org.eclipse.jkube.gradle.plugin.KubernetesExtension;
 import org.eclipse.jkube.kit.build.service.docker.DockerServiceHub;
+import org.eclipse.jkube.kit.build.service.docker.helper.ImageNameFormatter;
+import org.eclipse.jkube.kit.common.util.SpringBootUtil;
 import org.eclipse.jkube.kit.config.image.ImageConfiguration;
+import org.eclipse.jkube.kit.config.image.build.JKubeBuildStrategy;
 import org.eclipse.jkube.kit.config.resource.RuntimeMode;
 import org.eclipse.jkube.kit.config.service.BuildServiceConfig;
 import org.eclipse.jkube.kit.config.service.JKubeServiceException;
 import org.eclipse.jkube.kit.config.service.JKubeServiceHub;
-import org.gradle.api.GradleException;
 
-import java.io.IOException;
+import org.gradle.api.GradleException;
+import org.gradle.api.Project;
 
 import static org.eclipse.jkube.kit.common.util.BuildReferenceDateUtil.getBuildTimestamp;
 import static org.eclipse.jkube.kit.common.util.BuildReferenceDateUtil.getBuildTimestampFile;
 import static org.eclipse.jkube.kit.common.util.EnvUtil.storeTimestamp;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.getValueFromProperties;
 
 @SuppressWarnings("CdiInjectionPointsInspection")
 public class KubernetesBuildTask extends AbstractJKubeTask {
@@ -38,6 +47,7 @@ public class KubernetesBuildTask extends AbstractJKubeTask {
     super(extensionClass);
     setDescription(
         "Builds the container images configured for this project via a Docker, S2I binary build or any of the other available build strategies.");
+    addSpringBootBuildImageFinalizerIfApplicable(getProject());
   }
 
   @Override
@@ -69,7 +79,6 @@ public class KubernetesBuildTask extends AbstractJKubeTask {
     }
   }
 
-
   @Override
   protected boolean shouldSkip() {
     return super.shouldSkip() || kubernetesExtension.getSkipBuildOrDefault();
@@ -77,5 +86,17 @@ public class KubernetesBuildTask extends AbstractJKubeTask {
 
   protected BuildServiceConfig.BuildServiceConfigBuilder buildServiceConfigBuilder() {
     return TaskUtil.buildServiceConfigBuilder(kubernetesExtension);
+  }
+
+  private void addSpringBootBuildImageFinalizerIfApplicable(Project gradleProject) {
+    kubernetesExtension.javaProject = GradleUtil.convertGradleProject(gradleProject);
+    if (kubernetesExtension.getBuildStrategyOrDefault().equals(JKubeBuildStrategy.spring) &&
+        SpringBootUtil.isSpringBootBuildImageSupported(kubernetesExtension.javaProject)) {
+      ImageNameFormatter imageNameFormatter = new ImageNameFormatter(kubernetesExtension.javaProject, new Date());
+      String defaultName = imageNameFormatter.format(Optional.ofNullable(getValueFromProperties(kubernetesExtension.javaProject.getProperties(),
+          "jkube.image.name", "jkube.generator.name")).orElse("%g/%a:%l"));
+      GradleUtil.finalizeWithGradlePluginTask(getProject(), this, "bootBuildImage");
+      GradleUtil.setPropertyIfNotPresentInTask(getProject(), "bootBuildImage", "imageName", defaultName);
+    }
   }
 }
