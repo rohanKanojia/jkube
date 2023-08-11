@@ -18,7 +18,6 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.function.Function;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,7 +43,6 @@ public class JKubeConfiguration implements Serializable {
   private Map<String, String> buildArgs;
   private RegistryConfig registryConfig;
   private List<JavaProject> reactorProjects;
-  private transient Function<String, Boolean> postGoalTask;
 
   public File getBasedir() {
     return project.getBaseDirectory();

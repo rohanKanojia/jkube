@@ -17,18 +17,13 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
-import org.apache.maven.plugin.BuildPluginManager;
 import org.eclipse.jkube.generator.api.GeneratorContext;
 import org.eclipse.jkube.generator.api.GeneratorManager;
 import org.eclipse.jkube.kit.build.core.GavLabel;
-import org.eclipse.jkube.kit.build.service.docker.helper.ImageNameFormatter;
-import org.eclipse.jkube.kit.common.util.SpringBootUtil;
 import org.eclipse.jkube.kit.config.image.build.JKubeBuildStrategy;
 import org.eclipse.jkube.kit.common.JKubeConfiguration;
 import org.eclipse.jkube.kit.build.service.docker.DockerAccessFactory;
@@ -91,7 +86,6 @@ import org.sonatype.plexus.components.sec.dispatcher.SecDispatcher;
 import static org.eclipse.jkube.kit.build.service.docker.DockerAccessFactory.DockerAccessContext.DEFAULT_MAX_CONNECTIONS;
 import static org.eclipse.jkube.kit.common.util.BuildReferenceDateUtil.getBuildTimestamp;
 import static org.eclipse.jkube.kit.common.util.BuildReferenceDateUtil.getBuildTimestampFile;
-import static org.eclipse.jkube.kit.common.util.PropertiesUtil.getValueFromProperties;
 import static org.eclipse.jkube.kit.config.service.kubernetes.KubernetesClientUtil.updateResourceConfigNamespace;
 import static org.eclipse.jkube.maven.plugin.mojo.build.AbstractJKubeMojo.DEFAULT_LOG_PREFIX;
 
@@ -255,9 +249,6 @@ public abstract class AbstractDockerMojo extends AbstractMojo
 
     @Component
     protected DockerAccessFactory dockerAccessFactory;
-
-    @Component
-    private BuildPluginManager pluginManager;
 
     /**
      * Image configurations configured directly.
@@ -481,24 +472,9 @@ public abstract class AbstractDockerMojo extends AbstractMojo
             .reactorProjects(Collections.singletonList(javaProject))
             .buildArgs(buildArgs)
             .registryConfig(getRegistryConfig(pullRegistry))
-            .postGoalTask(getPostGoalTask(javaProject))
             .build();
     }
 
-    private Function<String, Boolean> getPostGoalTask(JavaProject javaProject) {
-        if (buildStrategy != null && buildStrategy.equals(JKubeBuildStrategy.spring) && SpringBootUtil.isSpringBootBuildImageSupported(javaProject)) {
-            ImageNameFormatter imageNameFormatter = new ImageNameFormatter(javaProject, new Date());
-            String defaultName = imageNameFormatter.format(Optional.ofNullable(getValueFromProperties(javaProject.getProperties(),
-                "jkube.image.name", "jkube.generator.name")).orElse("%g/%a:%l"));
-
-            project.getProperties().setProperty("spring-boot.build-image.imageName", defaultName);
-            return goal -> {
-                MavenUtil.callMavenPluginWithGoal(project, session, pluginManager, goal, log);
-                return true;
-            };
-        }
-        return null;
-    }
 
     protected RegistryConfig getRegistryConfig(String specificRegistry) {
         return RegistryConfig.builder()

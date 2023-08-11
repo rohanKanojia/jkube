@@ -35,7 +35,6 @@ import org.eclipse.jkube.kit.common.JavaProject;
 import org.eclipse.jkube.kit.common.Plugin;
 
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationPublications;
@@ -94,17 +93,6 @@ public class GradleUtil {
         .artifact(artifact)
         .buildPackageDirectory(artifact != null ? artifact.getParentFile() : null)
         .build();
-  }
-
-  public static void finalizeWithGradlePluginTask(Project gradleProject, Task currentTask, String finalizerTaskName) {
-    Task bootBuildImageTask = gradleProject.getTasks().getByName(finalizerTaskName);
-    currentTask.finalizedBy(bootBuildImageTask);
-    bootBuildImageTask.dependsOn(currentTask);
-  }
-
-  public static void setPropertyIfNotPresentInTask(Project gradleProject, String taskName, String propertyKey, String propertyValue) {
-    Task task = gradleProject.getTasks().getByName(taskName);
-    task.setProperty(propertyKey, propertyValue);
   }
 
   private static Properties extractProperties(Project gradleProject) {
