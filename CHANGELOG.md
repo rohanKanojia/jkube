@@ -47,6 +47,7 @@ _**Note**_:
 - Container Images generated using jkube opinionated defaults no longer contain full timestamp in `org.label-schema.build-date` label. The label contains the build date in the format `yyyy-MM-dd`.
 
 ### 1.14.0 (2023-08-31)
+* Fix #439: Add new build strategy for Buildpacks
 * Fix #1674: SpringBootGenerator utilizes the layered jar if present and use it as Docker layers
 * Fix #1713: Add HelidonHealthCheckEnricher to add Kubernetes health checks for Helidon applications
 * Fix #1714: Add HelidonGenerator to add opinionated container image for Helidon applications

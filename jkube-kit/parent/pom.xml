@@ -31,7 +31,7 @@
   <description>${project.name}</description>
 
 
-  <properties>
+    <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <version.bouncycastle.bcpkix>1.76</version.bouncycastle.bcpkix>
@@ -204,6 +204,12 @@
       <dependency>
         <groupId>org.eclipse.jkube</groupId>
         <artifactId>jkube-kit-build-service-jib</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.eclipse.jkube</groupId>
+        <artifactId>jkube-kit-build-service-buildpacks</artifactId>
         <version>${project.version}</version>
       </dependency>
 

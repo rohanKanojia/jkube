@@ -40,6 +40,8 @@ import org.eclipse.jkube.kit.common.util.EnvUtil;
 import javax.annotation.Nonnull;
 
 import static org.eclipse.jkube.kit.common.util.EnvUtil.isWindows;
+import static org.eclipse.jkube.kit.config.image.build.BuildPackConfiguration.createOpinionatedBuildPackConfiguration;
+import static org.eclipse.jkube.kit.config.image.build.BuildPackConfiguration.mergeBuildPackConfigurationWithImageConfiguration;
 
 /**
  * @author roland
@@ -321,6 +323,14 @@ public class BuildConfiguration implements Serializable {
   private File dockerArchiveFile;
 
   /**
+   * Provide configuration options for buildpacks based build.
+   *
+   * <p>
+   * This field is applicable only for <code>Buildpacks</code> build strategy
+   */
+  private BuildPackConfiguration buildpack;
+
+  /**
    * Array of images used for build cache resolution.
    * <p>
    * This field is applicable only for <code>docker</code> build strategy
@@ -413,6 +423,13 @@ public class BuildConfiguration implements Serializable {
 
   public File getAbsoluteDockerTarPath(String sourceDirectory, String projectBaseDir) {
     return EnvUtil.prepareAbsoluteSourceDirPath(sourceDirectory, projectBaseDir, getDockerArchive().getPath());
+  }
+
+  public BuildPackConfiguration getBuildpack() {
+    if (buildpack == null) {
+      buildpack = createOpinionatedBuildPackConfiguration();
+    }
+    return mergeBuildPackConfigurationWithImageConfiguration(buildpack, imagePullPolicy, tags, env, volumes);
   }
 
   public String initAndValidate() {
