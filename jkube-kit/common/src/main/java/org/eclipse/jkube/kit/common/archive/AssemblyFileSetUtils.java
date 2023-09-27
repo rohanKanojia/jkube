@@ -169,8 +169,13 @@ public class AssemblyFileSetUtils {
         for (File sourceChild : Optional.ofNullable(source.listFiles()).orElse(new File[0])) {
           copy(sourceDirectory, sourceChild, new File(target, sourceChild.getName()), assemblyFileSet);
         }
+        boolean lastModifiedUpdated = target.setLastModified(source.lastModified());
+        if (!lastModifiedUpdated) {
+          throw new IllegalStateException("Not able to set last modified in " + target.getAbsolutePath());
+        }
       } else {
         FileUtil.copy(source, target);
+        target.getParentFile().setLastModified(source.getParentFile().lastModified());
       }
       return calculateFilePermissions(source, target, assemblyFileSet);
     }

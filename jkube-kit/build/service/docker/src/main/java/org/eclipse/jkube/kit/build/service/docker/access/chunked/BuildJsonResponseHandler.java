@@ -38,7 +38,7 @@ public class BuildJsonResponseHandler implements EntityStreamReaderUtil.JsonEnti
                     (msg.equals(detailMsg) || "".equals(detailMsg) ? "" : "(" + detailMsg + ")"));
         } else if (json.has("stream")) {
             String message = json.get("stream").getAsString();
-            log.verbose("%s", message.trim());
+            log.info("%s", message.trim());
         } else if (json.has("status")) {
             String status = json.get("status").getAsString().trim();
             String id = json.has("id") ? json.get("id").getAsString() : null;
