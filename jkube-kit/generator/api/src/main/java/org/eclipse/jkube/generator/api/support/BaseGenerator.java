@@ -256,7 +256,7 @@ public abstract class BaseGenerator implements Generator {
         String docURL = project.getDocumentationUrl();
         Map<String, String> labels = new HashMap<>();
 
-        labels.put(BuildLabelAnnotations.BUILD_DATE.value(), LocalDateTime.now().toString());
+        labels.put(BuildLabelAnnotations.BUILD_DATE.value(), LocalDateTime.now().toLocalDate().toString());
         labels.put(BuildLabelAnnotations.NAME.value(), project.getName());
         labels.put(BuildLabelAnnotations.DESCRIPTION.value(), project.getDescription());
         if (docURL != null) {
