@@ -66,4 +66,22 @@ class Fabric8HttpUtilTest {
         .containsEntry("service", "registry.example.com")
         .containsEntry("scope", "repository:myuser/test-chart:pull");
   }
+
+  @Test
+  void appendAdditionalScopeIfNotPresent_whenProvidedScopeValueAbsent_thenAddScopeValue() {
+    assertThat(Fabric8HttpUtil.appendAdditionalScopeIfNotPresent("repository:myuser/test-chart:pull", "push"))
+        .isEqualTo("repository:myuser/test-chart:pull,push");
+  }
+
+  @Test
+  void appendAdditionalScopeIfNotPresent_whenProvidedScopeValuePresent_thenDoNothing() {
+    assertThat(Fabric8HttpUtil.appendAdditionalScopeIfNotPresent("repository:myuser/test-chart:pull", "pull"))
+        .isEqualTo("repository:myuser/test-chart:pull");
+  }
+
+  @Test
+  void appendAdditionalScopeIfNotPresent_whenRepositoryContainsScopeValue_thenAddScopeValue() {
+    assertThat(Fabric8HttpUtil.appendAdditionalScopeIfNotPresent("repository:myuser/test-chart-push:pull", "push"))
+        .isEqualTo("repository:myuser/test-chart-push:pull,push");
+  }
 }

@@ -33,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static org.eclipse.jkube.kit.common.util.AsyncUtil.get;
+import static org.eclipse.jkube.kit.common.util.Fabric8HttpUtil.appendAdditionalScopeIfNotPresent;
 import static org.eclipse.jkube.kit.common.util.Fabric8HttpUtil.extractAuthenticationChallengeIntoMap;
 import static org.eclipse.jkube.kit.common.util.Fabric8HttpUtil.toFormData;
 
@@ -94,10 +95,7 @@ public class OCIRegistryInterceptor implements Interceptor {
   private String submitHttpRequestForAuthenticationChallenge(HttpResponse<?> response) throws IOException {
     Map<String, String> authChallengeHeader = extractAuthenticationChallengeIntoMap(response);
     String authenticationUrl = authChallengeHeader.get("Bearer realm");
-    String scope = authChallengeHeader.get("scope");
-    if (!scope.contains("push")) {
-      scope += ",push";
-    }
+    String scope = appendAdditionalScopeIfNotPresent(authChallengeHeader.get("scope"), "push");
     String service = authChallengeHeader.get("service");
 
     return submitGetRequest(authenticationUrl, scope, service);

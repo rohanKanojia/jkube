@@ -71,4 +71,23 @@ public class Fabric8HttpUtil {
     }
     return result.toString();
   }
+
+  /**
+   * Parse www-authentication scope and append additional scope value if not present. It follows
+   * format specified in <a href="https://docs.docker.com/registry/spec/auth/token/#how-to-authenticate">Docker documentation.</a>
+   *
+   * @param scopeStr original scope string from www-authenticate map
+   * @param value value to append in scope string
+   * @return updated scope string
+   */
+  public static String appendAdditionalScopeIfNotPresent(String scopeStr, String value) {
+    String[] scopeParts = scopeStr.split(":");
+    if (scopeParts.length > 2) {
+      String pullOrPushScope = scopeParts[2];
+      if (!pullOrPushScope.contains(value)) {
+        scopeParts[2] = scopeParts[2] + "," + value;
+      }
+    }
+    return String.join(":", scopeParts);
+  }
 }
