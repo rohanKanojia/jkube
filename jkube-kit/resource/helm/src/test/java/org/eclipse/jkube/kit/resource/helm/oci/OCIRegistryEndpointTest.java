@@ -81,4 +81,28 @@ class OCIRegistryEndpointTest {
     assertThat(result)
         .isEqualTo("https://r.example.com/v2/myuser/test-chart/blobs/sha256:7ed393daf1ffc94803c08ffcbecb798fa58e786bebffbab02da5458f68d0ecb0");
   }
+
+  @Test
+  void getOCIRegistryHost_whenBaseUrlContainsHostAndPort_thenReturnHostWithPort() {
+    // Given
+    this.registryEndpoint = new OCIRegistryEndpoint(HelmRepository.builder().url("http://localhost:5000/myuser").build());
+
+    // When
+    String host = registryEndpoint.getOCIRegistryHost();
+
+    // Then
+    assertThat(host).isEqualTo("localhost:5000");
+  }
+
+  @Test
+  void getOCIRegistryHost_whenBaseUrlWithNoPort_thenReturnHost() {
+    // Given
+    this.registryEndpoint = new OCIRegistryEndpoint(HelmRepository.builder().url("https://r.example.com/myuser").build());
+
+    // When
+    String url = registryEndpoint.getOCIRegistryHost();
+
+    // Then
+    assertThat(url).isEqualTo("r.example.com");
+  }
 }
