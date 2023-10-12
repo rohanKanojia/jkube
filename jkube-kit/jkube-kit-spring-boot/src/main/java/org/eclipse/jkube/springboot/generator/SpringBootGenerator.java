@@ -100,7 +100,6 @@ public class SpringBootGenerator extends JavaExecGenerator {
     @Override
     protected boolean isFatJar() {
         if (!hasMainClass() && isSpringBootRepackage(getProject())) {
-            log.verbose("Using fat jar packaging as the spring boot plugin is using `repackage` goal execution");
             return true;
         }
         return super.isFatJar();
