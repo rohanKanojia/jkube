@@ -127,6 +127,13 @@
     <image.wildfly.upstream.istag>wildfly:${version.image.wildfly.upstream.s2i}</image.wildfly.upstream.istag>
 
     <jib-core.version>0.24.0</jib-core.version>
+
+    <!-- BuildPacks -->
+    <version.cli.pack.upstream.github>v0.32.1</version.cli.pack.upstream.github>
+    <download-link.cli.pack.upstream.github>https://github.com/buildpacks/pack/releases/download</download-link.cli.pack.upstream.github>
+    <binary-prefix.cli.pack.upstream.github>pack</binary-prefix.cli.pack.upstream.github>
+    <archive-suffix.unix.cli.pack.upstream.github>tgz</archive-suffix.unix.cli.pack.upstream.github>
+    <archive-suffix.windows.cli.pack.upstream.github>zip</archive-suffix.windows.cli.pack.upstream.github>
   </properties>
 
   <dependencyManagement>

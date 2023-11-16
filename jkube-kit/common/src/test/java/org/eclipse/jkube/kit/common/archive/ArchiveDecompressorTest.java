@@ -33,8 +33,8 @@ class ArchiveDecompressorTest {
 
   @ParameterizedTest
   @CsvSource({
-      "/archive/archive-decompressor/pack-v0.31.0-linux.tgz,pack",
-      "/archive/archive-decompressor/pack-v0.31.0-windows.zip,pack.exe"
+      "/archive/archive-decompressor/foo-v0.31.0-linux.tgz,pack",
+      "/archive/archive-decompressor/foo-v0.31.0-windows.zip,pack.exe"
   })
   void extractArchive_whenArchiveWithSingleFileProvided_thenExtractToSpecifiedDir(String filePath, String expectedFileInExtractedArchiveName) throws IOException {
     // Given
