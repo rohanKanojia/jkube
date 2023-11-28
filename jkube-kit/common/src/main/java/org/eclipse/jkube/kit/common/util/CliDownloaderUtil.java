@@ -19,33 +19,46 @@ import io.fabric8.kubernetes.client.http.HttpResponse;
 import io.fabric8.kubernetes.client.utils.HttpClientUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
+import org.eclipse.jkube.kit.common.ProxyConfig;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static io.fabric8.kubernetes.client.utils.HttpClientUtils.basicCredentials;
 import static org.apache.commons.io.FilenameUtils.removeExtension;
 import static org.eclipse.jkube.kit.common.archive.ArchiveDecompressor.extractArchive;
 
 public class CliDownloaderUtil {
   private CliDownloaderUtil() { }
 
-  public static String downloadCli(String baseDownloadUrl, String binaryPrefix, String artifactName, File outputDirectory) throws IOException {
+  public static String downloadCli(String baseDownloadUrl, String binaryPrefix, String artifactName, File outputDirectory, ProxyConfig proxyConfig) throws IOException {
     URL downloadUrl = new URL(String.format("%s/%s", baseDownloadUrl, artifactName));
     File targetExtractionDir = outputDirectory.toPath().resolve(removeExtension(artifactName)).toFile();
 
-    downloadAndExtractTo(downloadUrl, targetExtractionDir);
+    downloadAndExtractTo(downloadUrl, targetExtractionDir, proxyConfig);
 
     return getCliBinaryPathFromExtractedDir(targetExtractionDir, binaryPrefix);
   }
 
-  private static void downloadAndExtractTo(URL downloadUrl, File target) throws IOException {
-    try (HttpClient client = HttpClientUtils.createHttpClient(Config.empty()).newBuilder().build()) {
+  private static void downloadAndExtractTo(URL downloadUrl, File target, ProxyConfig proxyConfig) throws IOException {
+    HttpClient.Builder httpClientBuilder = HttpClientUtils.getHttpClientFactory().newBuilder(Config.empty());
+    if (proxyConfig != null) {
+      httpClientBuilder.proxyAddress(new InetSocketAddress(proxyConfig.getHost(), proxyConfig.getPort()));
+      if (StringUtils.isNotBlank(proxyConfig.getNonProxyHosts()) && downloadUrl.getHost().matches(proxyConfig.getNonProxyHosts())) {
+        httpClientBuilder.proxyType(HttpClient.ProxyType.DIRECT);
+      } else {
+        httpClientBuilder.proxyType(HttpClient.ProxyType.HTTP);
+      }
+      httpClientBuilder.proxyAuthorization(basicCredentials(proxyConfig.getUsername(), proxyConfig.getPassword()));
+    }
+    try (HttpClient client = httpClientBuilder.build()) {
       final HttpResponse<InputStream> response = client.sendAsync(
-              client.newHttpRequestBuilder().timeout(30, TimeUnit.MINUTES).url(downloadUrl).build(), InputStream.class)
+              client.newHttpRequestBuilder().timeout(1, TimeUnit.SECONDS).url(downloadUrl).build(), InputStream.class)
           .get();
       if (!response.isSuccessful()) {
         throw new IOException("Server returned (" + response.code() + ") while downloading " + downloadUrl);

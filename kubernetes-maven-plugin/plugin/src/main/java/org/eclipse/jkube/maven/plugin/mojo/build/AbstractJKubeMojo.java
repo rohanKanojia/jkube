@@ -235,6 +235,7 @@ public abstract class AbstractJKubeMojo extends AbstractMojo implements KitLogge
                 .reactorProjects(Collections.singletonList(javaProject))
                 .registryConfig(RegistryConfig.builder()
                     .settings(MavenUtil.getRegistryServerFromMavenSettings(settings))
+                    .proxyConfigs(MavenUtil.getProxyConfigFromMavenSettings(settings))
                     .passwordDecryptionMethod(this::decrypt)
                     .build())
                 .build())

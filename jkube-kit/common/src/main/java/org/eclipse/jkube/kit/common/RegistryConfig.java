@@ -35,6 +35,7 @@ public class RegistryConfig implements Serializable {
 
   private String registry;
   private List<RegistryServerConfiguration> settings;
+  private List<ProxyConfig> proxyConfigs;
   private boolean skipExtendedAuth;
   private Map authConfig;
   private transient UnaryOperator<String> passwordDecryptionMethod;

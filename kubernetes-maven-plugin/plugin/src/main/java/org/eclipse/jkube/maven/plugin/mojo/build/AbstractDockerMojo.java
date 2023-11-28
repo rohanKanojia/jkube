@@ -479,6 +479,7 @@ public abstract class AbstractDockerMojo extends AbstractMojo
     protected RegistryConfig getRegistryConfig(String specificRegistry) {
         return RegistryConfig.builder()
                 .settings(MavenUtil.getRegistryServerFromMavenSettings(settings))
+                .proxyConfigs(MavenUtil.getProxyConfigFromMavenSettings(settings))
                 .authConfig(authConfig != null ? authConfig.toMap() : null)
                 .skipExtendedAuth(skipExtendedAuth)
                 .registry(specificRegistry != null ? specificRegistry : registry)

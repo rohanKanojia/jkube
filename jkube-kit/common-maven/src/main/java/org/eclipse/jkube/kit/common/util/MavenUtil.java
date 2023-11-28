@@ -24,11 +24,13 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.apache.maven.plugin.BuildPluginManager;
+import org.apache.maven.settings.Proxy;
 import org.eclipse.jkube.kit.common.JavaProject;
 import org.eclipse.jkube.kit.common.Dependency;
 import org.eclipse.jkube.kit.common.KitLogger;
 import org.eclipse.jkube.kit.common.Maintainer;
 import org.eclipse.jkube.kit.common.Plugin;
+import org.eclipse.jkube.kit.common.ProxyConfig;
 import org.eclipse.jkube.kit.common.RegistryServerConfiguration;
 
 import org.apache.commons.lang3.StringUtils;
@@ -278,6 +280,24 @@ public class MavenUtil {
             return artifact.getFile();
         }
         return null;
+    }
+
+    public static List<ProxyConfig> getProxyConfigFromMavenSettings(Settings settings) {
+        List<ProxyConfig> proxyConfigurations = new ArrayList<>();
+        for (Proxy proxy : settings.getProxies()) {
+            if (proxy.isActive()) {
+                proxyConfigurations.add(ProxyConfig.builder()
+                    .id(proxy.getId())
+                    .username(proxy.getUsername())
+                    .password(proxy.getPassword())
+                    .host(proxy.getHost())
+                    .port(proxy.getPort())
+                    .nonProxyHosts(proxy.getNonProxyHosts())
+                    .protocol(proxy.getProtocol())
+                    .build());
+            }
+        }
+        return proxyConfigurations;
     }
 }
 

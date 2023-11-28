@@ -13,6 +13,7 @@
  */
 package org.eclipse.jkube.kit.common.util;
 
+import org.eclipse.jkube.kit.common.ProxyConfig;
 import org.eclipse.jkube.kit.common.TestHttpStaticServer;
 import org.eclipse.jkube.kit.common.assertj.FileAssertions;
 import org.junit.jupiter.api.Test;
@@ -69,7 +70,7 @@ class CliDownloaderUtilTest {
       String baseUrl = String.format("http://localhost:%d", http.getPort());
 
       // When
-      String downloadPath = CliDownloaderUtil.downloadCli(baseUrl, "foo", "foo-v0.0.1-linux.tgz", temporaryFolder);
+      String downloadPath = CliDownloaderUtil.downloadCli(baseUrl, "foo", "foo-v0.0.1-linux.tgz", temporaryFolder, null);
 
       // Then
       assertThat(downloadPath).contains("foo-v0.0.1-linux", "foo");
@@ -88,7 +89,7 @@ class CliDownloaderUtilTest {
       String baseUrl = String.format("http://localhost:%d", http.getPort());
 
       // When
-      String downloadPath = CliDownloaderUtil.downloadCli(baseUrl, "foo", "foo-v0.0.1-windows.zip", temporaryFolder);
+      String downloadPath = CliDownloaderUtil.downloadCli(baseUrl, "foo", "foo-v0.0.1-windows.zip", temporaryFolder, null);
 
       // Then
       assertThat(downloadPath).contains("foo-v0.0.1-windows", "foo.exe");
@@ -100,6 +101,25 @@ class CliDownloaderUtilTest {
   }
 
   @Test
+  void downloadCLI_whenZipArtifactProvidedProxy_thenDownloadAndExtract() throws IOException {
+    // Given
+    String baseUrl = "https://github.com/buildpacks/pack/releases/download/v0.32.1";
+
+    // When
+    String downloadPath = CliDownloaderUtil.downloadCli(baseUrl, "pack", "pack-v0.32.1-windows.zip", temporaryFolder, ProxyConfig.builder()
+            .host("localhost")
+            .port(3128)
+            .username("rokumar")
+            .password("12345")
+            .protocol("https")
+        .build());
+
+    // Then
+    assertThat(downloadPath).contains("pack-v0.32.1-windows", "pack.exe");
+  }
+
+
+  @Test
   void downloadCLI_whenArtifactNotAvailable_thenThrowException() throws IOException {
     File remoteDirectory = new File(getClass().getResource("/downloadable-artifacts").getFile());
     try (TestHttpStaticServer http = new TestHttpStaticServer(remoteDirectory)) {
@@ -108,7 +128,7 @@ class CliDownloaderUtilTest {
 
       // When + Then
       assertThatIOException()
-          .isThrownBy(() -> CliDownloaderUtil.downloadCli(baseUrl, "idontexist", "idontexist-v0.0.1-linux.tgz", temporaryFolder))
+          .isThrownBy(() -> CliDownloaderUtil.downloadCli(baseUrl, "idontexist", "idontexist-v0.0.1-linux.tgz", temporaryFolder, null))
           .withMessageContaining("Failed to download");
     }
   }
