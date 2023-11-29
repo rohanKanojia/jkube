@@ -127,6 +127,13 @@
     <image.wildfly.upstream.istag>wildfly:${version.image.wildfly.upstream.s2i}</image.wildfly.upstream.istag>
 
     <jib-core.version>0.24.0</jib-core.version>
+
+    <pack.version>v0.32.1</pack.version>
+    <pack.linux.artifact>pack-${pack.version}-linux.tgz</pack.linux.artifact>
+    <pack.linux-arm64.artifact>https://github.com/buildpacks/pack/releases/download/${pack.version}/pack-${pack.version}-linux-arm64.tgz</pack.linux-arm64.artifact>
+    <pack.macos.artifact>https://github.com/buildpacks/pack/releases/download/${pack.version}/pack-${pack.version}-macos.tgz</pack.macos.artifact>
+    <pack.macos-arm64.artifact>https://github.com/buildpacks/pack/releases/download/${pack.version}/pack-${pack.version}-macos-arm64.tgz</pack.macos-arm64.artifact>
+    <pack.windows.pack.artifact>https://github.com/buildpacks/pack/releases/download/${pack.version}/pack-${pack.version}-windows.zip</pack.windows.pack.artifact>
   </properties>
 
   <dependencyManagement>

@@ -30,6 +30,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
@@ -61,6 +62,7 @@ public class EnvUtil {
     private static final String COMMA_WHITESPACE = COMMA + WHITESPACE;
 
     private static UnaryOperator<String> envGetter = System::getenv;
+    private static UnaryOperator<String> propertyGetter = System::getProperty;
 
     private EnvUtil() {
     }
@@ -72,6 +74,15 @@ public class EnvUtil {
     public static void overrideEnvGetter(UnaryOperator<String> getter) {
         envGetter = getter;
     }
+
+    /**
+     * Don't use in production code. Only for testing purposes.
+     * @param propsGetter {@link UnaryOperator} for fetching a property
+     */
+    public static void overridePropertyGetter(UnaryOperator<String> propsGetter) {
+        propertyGetter = propsGetter;
+    }
+
     // Convert docker host URL to an HTTP(s) URL
     public static String convertTcpToHttpUrl(String connect) {
         String protocol = connect.contains(":" + DOCKER_HTTP_PORT) ? "http:" : "https:";
@@ -453,7 +464,7 @@ public class EnvUtil {
     }
 
     public static boolean isWindows() {
-        return System.getProperty("os.name").toLowerCase().contains("windows");
+        return getProperty("os.name").toLowerCase().contains("windows");
     }
 
     /**
@@ -461,7 +472,7 @@ public class EnvUtil {
      * @return the user home directory.
      */
     public static File getUserHome() {
-        String homeDir = System.getProperty("user.home");
+        String homeDir = getProperty("user.home");
         if (homeDir == null) {
             homeDir = getEnv("HOME");
         }
@@ -477,6 +488,16 @@ public class EnvUtil {
         return envGetter.apply(variableName);
     }
 
+    /**
+     * Returns value of given system property or null if not present
+     *
+     * @param propertyName name of system property
+     * @return value of system property or null if not present
+     */
+    public static String getProperty(String propertyName) {
+        return propertyGetter.apply(propertyName);
+    }
+
     public static String getEnvVarOrSystemProperty(String varName, String defaultValue) {
         return getEnvVarOrSystemProperty(varName, varName, defaultValue);
     }
@@ -486,9 +507,43 @@ public class EnvUtil {
         if (StringUtils.isNotBlank(ret)){
             return ret;
         }
-        return System.getProperty(systemProperty, defaultValue);
+        return Optional.ofNullable(getProperty(systemProperty)).orElse(defaultValue);
     }
 
+    /**
+     * Utility method to check whether underlying processor architecture is ARM or not
+     * @return boolean value which is true only when underlying processor architectureis ARM
+     */
+    public static boolean isProcessorArchitectureARM() {
+        return getEnvVarOrSystemProperty("", "os.arch", "amd64").contains("aarch");
+    }
+
+    /**
+     * Is underlying Operating System from Mac OS family.
+     *
+     * @return boolean value indicating whether Operating System is Mac or not.
+     */
+    public static boolean isMacOs() {
+        return getProperty("os.name").toLowerCase().contains("mac");
+    }
+
+    /**
+     * Find a binary in user's path
+     *
+     * @param binaryName name of file to find
+     * @return {@link File} containing binary's path, otherwise null.
+     */
+    public static File findBinaryFileInUserPath(String binaryName) {
+        String userPath = getEnv("PATH");
+        if (userPath != null) {
+            return Arrays.stream(userPath.split(File.pathSeparator))
+                .map(p -> new File(p, binaryName))
+                .filter(f -> f.isFile() && f.exists())
+                .findFirst()
+                .orElse(null);
+        }
+        return null;
+    }
 }
 
 
