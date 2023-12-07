@@ -61,6 +61,12 @@
             <type>test-jar</type>
         </dependency>
         <dependency>
+            <groupId>org.eclipse.jkube</groupId>
+            <artifactId>jkube-kit-build-service-buildpacks</artifactId>
+            <scope>test</scope>
+            <type>test-jar</type>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <scope>test</scope>
