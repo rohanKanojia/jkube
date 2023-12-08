@@ -14,7 +14,6 @@
 package org.eclipse.jkube.kit.config.service.kubernetes;
 
 import org.eclipse.jkube.kit.common.KitLogger;
-import org.eclipse.jkube.kit.common.TestHttpStaticServer;
 import org.eclipse.jkube.kit.common.util.EnvUtil;
 import org.eclipse.jkube.kit.common.util.PropertiesUtil;
 import org.eclipse.jkube.kit.config.image.ImageConfiguration;
@@ -33,12 +32,12 @@ import org.mockito.MockedStatic;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 
+import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -75,7 +74,9 @@ class BuildPackBuildServiceTest {
     properties.put("user.home", temporaryFolder.getAbsolutePath());
     properties.put("os.name", System.getProperty("os.name"));
     properties.put("os.arch", System.getProperty("os.arch"));
-    Map<String, String> env = Collections.singletonMap("HOME", temporaryFolder.getAbsolutePath());
+    Map<String, String> env = new HashMap<>();
+    env.put("HOME", temporaryFolder.getAbsolutePath());
+    env.put("PATH", temporaryFolder.toPath().resolve("bin").toFile().getAbsolutePath());
     EnvUtil.overrideEnvGetter(env::get);
     EnvUtil.overridePropertyGetter(properties::get);
     propertiesUtilMockedStatic = mockStatic(PropertiesUtil.class);
@@ -111,36 +112,39 @@ class BuildPackBuildServiceTest {
 
 
   @Test
-  void buildImage_whenPackConfigHasDefaultBuilderSet_thenUseThatBuilder() throws IOException {
-    File remoteDirectory = new File(Objects.requireNonNull(getClass().getResource("/artifacts")).getFile());
-    try (TestHttpStaticServer http = new TestHttpStaticServer(remoteDirectory)) {
-      // Given
-      givenPackConfigHasDefaultBuilder(temporaryFolder);
-      propertiesUtilMockedStatic.when(() -> PropertiesUtil.getPropertiesFromResource(any()))
-          .thenReturn(createPackProperties(String.format("http://localhost:%d/", http.getPort())))
-          .thenCallRealMethod();
+  void buildImage_whenLocalPackCLIAndPackConfigHasDefaultBuilderSet_thenUseThatBuilder() throws IOException {
+    // Given
+    givenPackConfigHasDefaultBuilder(temporaryFolder);
+    propertiesUtilMockedStatic.when(() -> PropertiesUtil.getPropertiesFromResource(any()))
+        .thenReturn(createPackProperties("http://localhost.idontexist"))
+        .thenCallRealMethod();
+    givenPackCliPresentOnUserMachine(String.format("/%s", applicablePackBinary));
 
-      // When
-      new BuildPackBuildService(mockedServiceHub).buildSingleImage(imageConfiguration);
+    // When
+    new BuildPackBuildService(mockedServiceHub).buildSingleImage(imageConfiguration);
 
-      // Then
-      verify(kitLogger).info("[[s]]%s","build foo/bar:latest --builder cnbs/sample-builder:bionic --creation-time now");
-    }
+    // Then
+    verify(kitLogger).info("[[s]]%s","build foo/bar:latest --builder cnbs/sample-builder:bionic --creation-time now");
   }
 
   @Test
-  void buildImage_whenNoDefaultBuilderInPackConfig_thenUseOpinionatedBuilderImage() throws IOException {
-    File remoteDirectory = new File(Objects.requireNonNull(getClass().getResource("/artifacts")).getFile());
-    try (TestHttpStaticServer http = new TestHttpStaticServer(remoteDirectory)) {
-      propertiesUtilMockedStatic.when(() -> PropertiesUtil.getPropertiesFromResource(any()))
-          .thenReturn(createPackProperties(String.format("http://localhost:%d/", http.getPort())));
+  void buildImage_whenLocalPackCLIAndNoDefaultBuilderInPackConfig_thenUseOpinionatedBuilderImage() throws IOException {
+    propertiesUtilMockedStatic.when(() -> PropertiesUtil.getPropertiesFromResource(any()))
+        .thenReturn(createPackProperties("http://localhost.idontexist"));
+    givenPackCliPresentOnUserMachine(String.format("/%s", applicablePackBinary));
 
-      // When
-      new BuildPackBuildService(mockedServiceHub).buildSingleImage(imageConfiguration);
+    // When
+    new BuildPackBuildService(mockedServiceHub).buildSingleImage(imageConfiguration);
 
-      // Then
-      verify(kitLogger).info("[[s]]%s", "build foo/bar:latest --builder paketobuildpacks/builder:base --creation-time now");
-    }
+    // Then
+    verify(kitLogger).info("[[s]]%s", "build foo/bar:latest --builder paketobuildpacks/builder:base --creation-time now");
+  }
+
+  private void givenPackCliPresentOnUserMachine(String packResource) throws IOException {
+    File bin = new File(temporaryFolder, "bin");
+    File pack = new File(Objects.requireNonNull(getClass().getResource(packResource)).getFile());
+    Files.createDirectory(bin.toPath());
+    Files.copy(pack.toPath(), bin.toPath().resolve(pack.getName()), COPY_ATTRIBUTES);
   }
 
   private Properties createPackProperties(String baseUrl) {

@@ -29,10 +29,10 @@ import org.eclipse.jkube.kit.config.service.BuildServiceConfig;
 import org.eclipse.jkube.kit.config.service.JKubeServiceException;
 import org.eclipse.jkube.kit.config.service.JKubeServiceHub;
 import org.eclipse.jkube.kit.service.buildpacks.BuildPackBuildOptions;
-import org.eclipse.jkube.kit.service.buildpacks.BuildPackCliDownloader;
 import org.eclipse.jkube.kit.service.buildpacks.controller.BuildPackCliController;
 
 import static org.apache.commons.lang3.StringUtils.strip;
+import static org.eclipse.jkube.kit.common.util.EnvUtil.findBinaryFileInUserPath;
 
 public class BuildPackBuildService extends AbstractImageBuildService {
   private static final String DEFAULT_BUILDER_IMAGE = "paketobuildpacks/builder:base";
@@ -57,10 +57,22 @@ public class BuildPackBuildService extends AbstractImageBuildService {
 
   private void doBuildPackBuild(ImageConfiguration imageConfiguration) {
     Properties packProperties = PropertiesUtil.getPropertiesFromResource(BuildPackBuildService.class.getResource("/META-INF/jkube/pack-cli.properties"));
-    BuildPackCliDownloader packCliDownloader = new BuildPackCliDownloader(kitLogger, packProperties);
-    BuildPackCliController packCliController = new BuildPackCliController(packCliDownloader.getPackCLIIfPresentOrDownload(), kitLogger);
+    File packCli = getLocalPackCLI(packProperties);
+    kitLogger.info("Using pack %s", packCli.getAbsolutePath());
+    BuildPackCliController packCliController = new BuildPackCliController(packCli, kitLogger);
     BuildPackBuildOptions buildOptions = createBuildPackOptions(imageConfiguration);
     packCliController.build(buildOptions);
+  }
+
+  private File getLocalPackCLI(Properties packProperties) {
+    kitLogger.info("Checking for local pack CLI");
+    String applicableBinaryProperty = String.format("%s.binary-name", EnvUtil.isWindows() ? "windows" : "unix");
+    String platformBinaryName = (String) packProperties.get(applicableBinaryProperty);
+    File pack = findBinaryFileInUserPath(platformBinaryName);
+    if (pack == null) {
+      throw new IllegalStateException("No local pack binary found");
+    }
+    return pack;
   }
 
   private BuildPackBuildOptions createBuildPackOptions(ImageConfiguration imageConfiguration) {
