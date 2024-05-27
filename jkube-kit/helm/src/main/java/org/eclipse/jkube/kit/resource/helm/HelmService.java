@@ -167,6 +167,17 @@ public class HelmService {
     }
   }
 
+  public void dependencyUpdate(HelmConfig helmConfig) {
+    for (HelmConfig.HelmType helmType : helmConfig.getTypes()) {
+      logger.info("Running Helm Dependency Upgrade %s %s", helmConfig.getChart(), helmConfig.getVersion());
+      Helm helm = new Helm(Paths.get(helmConfig.getOutputDir(), helmType.getOutputDir()));
+      logger.info("[[W]]%s", helm.dependency().update()
+                      .verify()
+                      .debug()
+              .call());
+    }
+  }
+
   public void lint(HelmConfig helmConfig) {
     for (HelmConfig.HelmType helmType : helmConfig.getTypes()) {
       final Path helmPackage = resolveTarballFile(helmConfig, helmType);
