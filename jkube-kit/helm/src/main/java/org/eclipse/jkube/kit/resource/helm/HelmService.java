@@ -40,8 +40,7 @@ import com.marcnuri.helm.InstallCommand;
 import com.marcnuri.helm.LintCommand;
 import com.marcnuri.helm.LintResult;
 import com.marcnuri.helm.Release;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import com.marcnuri.helm.UninstallCommand;
 import org.eclipse.jkube.kit.common.JKubeConfiguration;
 import org.eclipse.jkube.kit.common.JKubeException;
 import org.eclipse.jkube.kit.common.KitLogger;
@@ -226,6 +225,18 @@ public class HelmService {
           .filter(StringUtils::isNotBlank)
           .forEach(l -> logger.info("[[W]]%s", l)));
     }
+  }
+
+  public void uninstall(HelmConfig helmConfig) {
+    logger.info("Uninstalling Helm Chart %s %s", helmConfig.getChart(), helmConfig.getVersion());
+    String uninstallReleaseName = Optional.ofNullable(helmConfig.getReleaseName()).orElse(helmConfig.getChart());
+    UninstallCommand uninstallCommand = Helm.uninstall(uninstallReleaseName)
+      .debug()
+      .withKubeConfig(createTemporaryKubeConfigForInstall());
+
+    Arrays.stream(uninstallCommand.call().split("\r?\n"))
+      .filter(StringUtils::isNotBlank)
+      .forEach(l -> logger.info("[[W]]%s", l));
   }
 
   private Path createTemporaryKubeConfigForInstall() {

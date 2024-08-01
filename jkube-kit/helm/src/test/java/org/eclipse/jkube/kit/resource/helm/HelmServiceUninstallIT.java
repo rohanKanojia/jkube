@@ -13,7 +13,6 @@
  */
 package org.eclipse.jkube.kit.resource.helm;
 
-import com.marcnuri.helm.Helm;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
@@ -43,9 +42,9 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@DisplayName("HelmService.install")
+@DisplayName("HelmService.uninstall")
 @EnableKubernetesMockClient(crud = true)
-class HelmServiceInstallIT {
+class HelmServiceUninstallIT {
   @TempDir
   private Path tempDir;
   private HelmConfig helmConfig;
@@ -86,62 +85,26 @@ class HelmServiceInstallIT {
   }
 
   @Test
-  @DisplayName("when valid chart provided, then log installation details after install")
-  void validChart_thenLogInstalledChartDetails() throws IOException {
+  @DisplayName("when valid chart provided, then log uninstallation details after uninstall")
+  void validChart_thenLogUninstalledChartDetails() throws IOException {
     // Given
     helmService.generateHelmCharts(helmConfig);
-    // When
     helmService.install(helmConfig);
+    // When
+    helmService.uninstall(helmConfig);
+
     // Then
-  }
-
-  private void givenHelmDependencyPresent() {
-    Helm.create().withName("the-dependency").withDir(tempDir).call();
-    helmConfig = helmConfig.toBuilder()
-      .dependencies(Collections.singletonList(HelmDependency.builder()
-        .name("the-dependency")
-        .version("0.1.0")
-        .repository("file://../../the-dependency")
-        .build()))
-      .build();
+    verify(kitLogger, times(1)).info("[[W]]NAME : %s", "test-project");
+    verify(kitLogger, times(1)).info("[[W]]NAMESPACE : %s", "");
+    verify(kitLogger, times(1)).info("[[W]]STATUS : %s", "deployed");
+    verify(kitLogger, times(1)).info("[[W]]REVISION : %s", "1");
   }
 
   @Test
-  @DisplayName("when invalid chart provided, then throw exception")
-  void whenInvalidChartLocation_thenThrowException() {
+  @DisplayName("when chart not present, then uninstall fails")
+  void chartAbsent_thenLogChartUninstallFailure() {
     assertThatIllegalStateException()
-      .isThrownBy(() -> helmService.install(helmConfig))
+      .isThrownBy(() -> helmService.uninstall(helmConfig))
       .withMessageContaining(" not found");
-  }
-
-  @Test
-  @DisplayName("when helm chart release name invalid, then throw exception")
-  void whenHelmChartNameInvalid_thenThrowException() throws IOException {
-    // Given
-    helmConfig = helmConfig.toBuilder().releaseName("INVALID").build();
-    helmService.generateHelmCharts(helmConfig);
-    // When + Then
-    assertThatIllegalStateException()
-      .isThrownBy(() -> helmService.install(helmConfig))
-      .withMessageContaining("release name \"INVALID\": invalid release name");
-  }
-
-  @Test
-  @DisplayName("when dependency referenced doesn't exist, then throw exception")
-  void whenDependencyReferencedDoesNotExist_thenThrowException() throws IOException {
-    // Given
-    helmConfig = helmConfig.toBuilder()
-      .installDependencyUpdate(true)
-      .dependencies(Collections.singletonList(HelmDependency.builder()
-        .name("the-dependency")
-        .version("0.1.0")
-        .repository("file://../../the-dependency")
-        .build()))
-      .build();
-    helmService.generateHelmCharts(helmConfig);
-    // When + Then
-    assertThatIllegalStateException()
-      .isThrownBy(() -> helmService.install(helmConfig))
-      .withMessage(String.format("An error occurred while updating chart dependencies: directory %s/the-dependency not found", tempDir));
   }
 }
