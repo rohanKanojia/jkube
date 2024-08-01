@@ -87,5 +87,9 @@
       <groupId>io.fabric8</groupId>
       <artifactId>openshift-server-mock</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.fabric8</groupId>
+      <artifactId>kube-api-test</artifactId>
+    </dependency>
   </dependencies>
 </project>

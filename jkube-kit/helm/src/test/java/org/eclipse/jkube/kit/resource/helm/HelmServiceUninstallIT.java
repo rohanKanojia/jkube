@@ -13,7 +13,11 @@
  */
 package org.eclipse.jkube.kit.resource.helm;
 
+import io.fabric8.kubeapitest.junit.EnableKubeAPIServer;
+import io.fabric8.kubeapitest.junit.KubeConfig;
+import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
 import io.fabric8.openshift.api.model.Template;
@@ -43,7 +47,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @DisplayName("HelmService.uninstall")
-@EnableKubernetesMockClient(crud = true)
+//@EnableKubernetesMockClient(crud = true)
+@EnableKubeAPIServer
 class HelmServiceUninstallIT {
   @TempDir
   private Path tempDir;
@@ -51,10 +56,16 @@ class HelmServiceUninstallIT {
   private HelmService helmService;
   private KitLogger kitLogger;
   private KubernetesClient kubernetesClient;
-  private KubernetesMockServer server;
+//  private KubernetesMockServer server;
+
+  @KubeConfig
+  static String kubeConfigYaml;
 
   @BeforeEach
   void setUp() throws URISyntaxException, IOException {
+    kubernetesClient = new KubernetesClientBuilder()
+      .withConfig(Config.fromKubeconfig(kubeConfigYaml))
+      .build();
     kitLogger = spy(new KitLogger.SilentLogger());
     Template helmParameterTemplates = Serialization.unmarshal(HelmServiceInstallIT.class.getResource("/it/sources/global-template.yml"), Template.class);
     Path outputDir = tempDir.resolve("output");
@@ -66,7 +77,7 @@ class HelmServiceUninstallIT {
       .tarballOutputDir(outputDir.toFile().getAbsolutePath())
       .outputDir(outputDir.toString())
       .parameterTemplates(Collections.singletonList(helmParameterTemplates))
-      .sourceDir(new File(Objects.requireNonNull(HelmServiceInstallIT.class.getResource("/it/sources")).toURI()).getAbsolutePath())
+      .sourceDir(new File(Objects.requireNonNull(HelmServiceInstallIT.class.getResource("/uninstall")).toURI()).getAbsolutePath())
       .releaseName("test-project")
       .disableOpenAPIValidation(true)
       .parameters(Arrays.asList(
@@ -75,7 +86,7 @@ class HelmServiceUninstallIT {
         HelmParameter.builder().name("deployment.replicas").value(1).build()))
       .build();
     // Remove after https://github.com/fabric8io/kubernetes-client/issues/6062 is fixed
-    prepareMockWebServerExpectationsForAggregatedDiscoveryEndpoints(server);
+//    prepareMockWebServerExpectationsForAggregatedDiscoveryEndpoints(server);
     helmService = new HelmService(JKubeConfiguration.builder()
       .project(JavaProject.builder()
         .buildDirectory(tempDir.resolve("target").toFile())

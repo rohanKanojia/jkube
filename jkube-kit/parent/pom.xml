@@ -743,6 +743,13 @@
 
       <dependency>
         <groupId>io.fabric8</groupId>
+        <artifactId>kube-api-test</artifactId>
+        <version>${version.kubernetes-client}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.fabric8</groupId>
         <artifactId>mockwebserver</artifactId>
         <version>${version.kubernetes-client}</version>
         <scope>test</scope>
