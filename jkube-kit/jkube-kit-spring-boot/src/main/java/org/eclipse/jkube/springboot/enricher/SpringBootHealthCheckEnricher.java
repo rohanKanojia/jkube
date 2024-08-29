@@ -43,6 +43,7 @@ public class SpringBootHealthCheckEnricher extends AbstractHealthCheckEnricher {
 
     private static final String LIVENESS_PROBE_SUFFIX = "/liveness";
     private static final String READINESS_PROBE_SUFFIX = "/readiness";
+    private final SpringBootConfiguration springBootConfiguration;
 
     @AllArgsConstructor
     private enum Config implements Configs.Config {
@@ -63,6 +64,7 @@ public class SpringBootHealthCheckEnricher extends AbstractHealthCheckEnricher {
 
     public SpringBootHealthCheckEnricher(JKubeEnricherContext buildContext) {
         super(buildContext, ENRICHER_NAME);
+        springBootConfiguration = SpringBootConfiguration.from(getContext().getProject());
     }
 
     @Override
@@ -97,7 +99,6 @@ public class SpringBootHealthCheckEnricher extends AbstractHealthCheckEnricher {
     }
 
     protected Probe buildProbe(Integer initialDelay, Integer period, Integer timeout, Integer failureTh, Integer successTh, String suffix) {
-        final SpringBootConfiguration springBootConfiguration = SpringBootConfiguration.from(getContext().getProject());
         Integer managementPort = springBootConfiguration.getManagementPort();
         boolean usingManagementPort = managementPort != null;
 

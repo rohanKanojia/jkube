@@ -18,11 +18,14 @@ import io.fabric8.kubernetes.api.model.ProbeBuilder;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.eclipse.jkube.kit.common.Configs;
-import org.eclipse.jkube.kit.common.util.ThorntailUtil;
 import org.eclipse.jkube.kit.enricher.api.JKubeEnricherContext;
 import org.eclipse.jkube.kit.enricher.specific.AbstractHealthCheckEnricher;
 
+import java.util.Optional;
 import java.util.Properties;
+
+import static org.eclipse.jkube.kit.common.util.ThorntailUtil.resolveThorntailAppConfigProperties;
+import static org.eclipse.jkube.kit.common.util.ThorntailUtil.resolveThorntailWebPortFromThorntailConfig;
 
 /**
  * Enriches thorntail-v2 containers with health checks if the monitoring fraction is present.
@@ -30,9 +33,11 @@ import java.util.Properties;
 public class ThorntailV2HealthCheckEnricher extends AbstractHealthCheckEnricher {
 
     private static final String IO_THORNTAIL = "io.thorntail";
+    private final Properties thorntailApplicationConfig;
 
     public ThorntailV2HealthCheckEnricher(JKubeEnricherContext buildContext) {
         super(buildContext, "jkube-healthcheck-thorntail-v2");
+        thorntailApplicationConfig = resolveThorntailAppConfigProperties(log, getContext().getProject());
     }
 
     @AllArgsConstructor
@@ -91,13 +96,9 @@ public class ThorntailV2HealthCheckEnricher extends AbstractHealthCheckEnricher 
     }
 
     protected int getPort() {
-        final Properties properties = ThorntailUtil.getThorntailProperties(getContext().getProject());
-        properties.putAll(System.getProperties());
-        if (properties.containsKey("thorntail.http.port")) {
-            return Integer.parseInt((String) properties.get("thorntail.http.port"));
-        }
-
-        return Configs.asInt(getConfig(Config.PORT));
+        return Optional.ofNullable(resolveThorntailWebPortFromThorntailConfig(thorntailApplicationConfig))
+          .map(Integer::parseInt)
+          .orElse(Configs.asInt(getConfig(Config.PORT)));
     }
 
     protected String getPath() {

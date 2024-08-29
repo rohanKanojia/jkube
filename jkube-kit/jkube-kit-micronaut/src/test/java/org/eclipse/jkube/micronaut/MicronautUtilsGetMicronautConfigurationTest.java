@@ -20,6 +20,7 @@ import java.util.Properties;
 import java.util.stream.Stream;
 
 import org.eclipse.jkube.kit.common.JavaProject;
+import org.eclipse.jkube.kit.common.KitLogger;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -27,7 +28,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.eclipse.jkube.micronaut.MicronautUtils.getMicronautConfiguration;
+import static org.eclipse.jkube.micronaut.MicronautUtils.resolveMicronautApplicationConfigProperties;
 
 class MicronautUtilsGetMicronautConfigurationTest {
   @TempDir
@@ -43,14 +44,14 @@ class MicronautUtilsGetMicronautConfigurationTest {
 
   @ParameterizedTest(name = "Micronaut configuration can be read from application.{0} files")
   @MethodSource("data")
-  void getMicronautConfigurationFromProperties(String directory, String nameSuffix) throws IOException {
+  void resolveMicronautApplicationConfigPropertiesFromProperties(String directory, String nameSuffix) throws IOException {
     // Given
     JavaProject javaProject = JavaProject.builder()
       .compileClassPathElement(MicronautUtilsGetMicronautConfigurationTest.class.getResource(String.format("/utils-test/port-config/%s/", directory)).getPath())
       .outputDirectory(Files.createDirectory(temporaryFolder.resolve("target")).toFile())
       .build();
     // When
-    final Properties props = getMicronautConfiguration(javaProject);
+    final Properties props = resolveMicronautApplicationConfigProperties(new KitLogger.SilentLogger(), javaProject);
     // Then
     assertThat(props).containsExactly(
         entry("micronaut.application.name", "port-config-test-" + nameSuffix),

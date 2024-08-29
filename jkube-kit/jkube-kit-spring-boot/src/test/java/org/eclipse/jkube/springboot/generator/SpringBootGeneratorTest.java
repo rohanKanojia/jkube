@@ -224,7 +224,7 @@ class SpringBootGeneratorTest {
 
   private void withPlugin(Plugin plugin) {
     context = context.toBuilder()
-      .project(JavaProject.builder().plugin(plugin).build())
+      .project(context.getProject().toBuilder().plugin(plugin).build())
       .build();
   }
 }

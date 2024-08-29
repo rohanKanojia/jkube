@@ -21,8 +21,9 @@ import org.eclipse.jkube.kit.common.AssemblyFileSet;
 import org.eclipse.jkube.kit.common.JavaProject;
 import org.eclipse.jkube.kit.common.util.FileUtil;
 
+import java.util.Properties;
+
 import static org.eclipse.jkube.quarkus.QuarkusUtils.findSingleFileThatEndsWith;
-import static org.eclipse.jkube.quarkus.QuarkusUtils.getQuarkusConfiguration;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.runnerSuffix;
 
 public class UberJarGenerator extends AbstractQuarkusNestedGenerator {
@@ -37,11 +38,11 @@ public class UberJarGenerator extends AbstractQuarkusNestedGenerator {
   }
 
   @Override
-  public AssemblyConfiguration createAssemblyConfiguration() {
+  public AssemblyConfiguration createAssemblyConfiguration(Properties quarkusConfiguration) {
     final JavaProject project = getProject();
     final AssemblyFileSet.AssemblyFileSetBuilder fileSetBuilder = createFileSet()
       .directory(FileUtil.getRelativePath(project.getBaseDirectory(), project.getBuildDirectory()))
-      .include(findSingleFileThatEndsWith(project, runnerSuffix(getQuarkusConfiguration(project)) + ".jar"))
+      .include(findSingleFileThatEndsWith(project, runnerSuffix(quarkusConfiguration) + ".jar"))
       .fileMode("0640");
     return AssemblyConfiguration.builder()
       .targetDir(getTargetDir())

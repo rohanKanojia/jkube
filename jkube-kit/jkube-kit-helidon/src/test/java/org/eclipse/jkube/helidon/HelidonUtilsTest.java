@@ -15,6 +15,8 @@ package org.eclipse.jkube.helidon;
 
 import org.eclipse.jkube.kit.common.Dependency;
 import org.eclipse.jkube.kit.common.JavaProject;
+import org.eclipse.jkube.kit.common.KitLogger;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -29,8 +31,20 @@ import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class HelidonUtilsTest {
+  private KitLogger logger;
+
+  @BeforeEach
+  void setUp() {
+    logger = spy(new KitLogger.SilentLogger());
+  }
+
   @Test
   void hasHelidonDependencies_whenHelidonDependenciesPresent_thenReturnTrue() {
     // Given
@@ -81,7 +95,7 @@ class HelidonUtilsTest {
   }
 
   @Test
-  void getHelidonConfiguration_whenApplicationYamlProvided_thenShouldExtractConfigurationAsProperties(@TempDir Path temporaryFolder) throws IOException {
+  void resolveHelidonApplicationConfigProperties_whenApplicationYamlProvided_thenShouldExtractConfigurationAsProperties(@TempDir Path temporaryFolder) throws IOException {
     // Given
     JavaProject javaProject = JavaProject.builder()
         .compileClassPathElements(Collections.singletonList(
@@ -89,16 +103,17 @@ class HelidonUtilsTest {
         .outputDirectory(Files.createDirectory(temporaryFolder.resolve("target")).toFile())
         .build();
     // When
-    final Properties props = HelidonUtils.getHelidonConfiguration(javaProject);
+    final Properties props = HelidonUtils.resolveHelidonApplicationConfigProperties(logger, javaProject);
     // Then
     assertThat(props).containsOnly(
         entry("app.greeting", "Hello"),
         entry("server.port", "8080"),
         entry("server.host", "0.0.0.0"));
+    verify(logger, times(1)).debug("Helidon Application Config loaded from : %s", HelidonUtilsTest.class.getResource("/utils-test/config/yaml/application.yml"));
   }
 
   @Test
-  void getHelidonConfiguration_whenMicroprofilePropertiesProvided_thenShouldExtractConfigurationAsProperties(@TempDir Path temporaryFolder) throws IOException {
+  void resolveHelidonApplicationConfigProperties_whenMicroprofilePropertiesProvided_thenShouldExtractConfigurationAsProperties(@TempDir Path temporaryFolder) throws IOException {
     // Given
     JavaProject javaProject = JavaProject.builder()
         .compileClassPathElements(Collections.singletonList(
@@ -106,16 +121,17 @@ class HelidonUtilsTest {
         .outputDirectory(Files.createDirectory(temporaryFolder.resolve("target")).toFile())
         .build();
     // When
-    final Properties props = HelidonUtils.getHelidonConfiguration(javaProject);
+    final Properties props = HelidonUtils.resolveHelidonApplicationConfigProperties(logger, javaProject);
     // Then
     assertThat(props).containsOnly(
         entry("app.greeting", "Hello"),
         entry("server.port", "8080"),
         entry("server.host", "0.0.0.0"));
+    verify(logger, times(1)).debug("Helidon Application Config loaded from : %s", HelidonUtilsTest.class.getResource("/utils-test/config/properties/META-INF/microprofile-config.properties"));
   }
 
   @Test
-  void getHelidonConfiguration_whenNothingFoundOnClassPath_thenShouldReturnProjectProperties(@TempDir Path temporaryFolder) throws IOException {
+  void resolveHelidonApplicationConfigProperties_whenNothingFoundOnClassPath_thenShouldReturnProjectProperties(@TempDir Path temporaryFolder) throws IOException {
     // Given
     Properties properties = new Properties();
     JavaProject javaProject = JavaProject.builder()
@@ -124,9 +140,10 @@ class HelidonUtilsTest {
         .outputDirectory(Files.createDirectory(temporaryFolder.resolve("target")).toFile())
         .build();
     // When
-    final Properties props = HelidonUtils.getHelidonConfiguration(javaProject);
+    final Properties props = HelidonUtils.resolveHelidonApplicationConfigProperties(logger, javaProject);
     // Then
     assertThat(props).isEqualTo(properties);
+    verify(logger, times(0)).debug(anyString(), any());
   }
 
   @Test

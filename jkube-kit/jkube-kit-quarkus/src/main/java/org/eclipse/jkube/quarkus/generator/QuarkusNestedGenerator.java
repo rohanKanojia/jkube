@@ -27,7 +27,6 @@ import java.util.function.BiFunction;
 
 import static org.eclipse.jkube.generator.javaexec.JavaExecGenerator.JOLOKIA_PORT_DEFAULT;
 import static org.eclipse.jkube.generator.javaexec.JavaExecGenerator.PROMETHEUS_PORT_DEFAULT;
-import static org.eclipse.jkube.quarkus.QuarkusUtils.getQuarkusConfiguration;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.runnerSuffix;
 
 public interface QuarkusNestedGenerator {
@@ -36,7 +35,7 @@ public interface QuarkusNestedGenerator {
 
   RuntimeMode getRuntimeMode();
 
-  AssemblyConfiguration createAssemblyConfiguration();
+  AssemblyConfiguration createAssemblyConfiguration(Properties quarkusApplicationConfiguration);
 
   default boolean isFatJar() {
     return false;
@@ -54,7 +53,7 @@ public interface QuarkusNestedGenerator {
     return PROMETHEUS_PORT_DEFAULT;
   }
 
-  default Arguments getBuildEntryPoint() {
+  default Arguments getBuildEntryPoint(Properties quarkusConfiguration) {
     return null;
   }
 
@@ -62,12 +61,11 @@ public interface QuarkusNestedGenerator {
 
   String getTargetDir();
 
-  static QuarkusNestedGenerator from(GeneratorContext context, GeneratorConfig config) {
+  static QuarkusNestedGenerator from(GeneratorContext context, GeneratorConfig config, Properties quarkusConfiguration) {
     // Legacy (Quarkus 1.0) settings support
     if (Boolean.parseBoolean(config.get(QuarkusGenerator.Config.NATIVE_IMAGE))) {
       return new NativeGenerator(context, config);
     }
-    final Properties quarkusConfiguration = getQuarkusConfiguration(context.getProject());
     return from(quarkusConfiguration).orElseGet(() -> fromFiles(context.getProject(), quarkusConfiguration))
       .apply(context, config);
   }

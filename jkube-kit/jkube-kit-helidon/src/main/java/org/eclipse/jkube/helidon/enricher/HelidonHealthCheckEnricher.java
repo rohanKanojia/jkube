@@ -16,15 +16,20 @@ package org.eclipse.jkube.helidon.enricher;
 import org.eclipse.jkube.kit.enricher.api.JKubeEnricherContext;
 import org.eclipse.jkube.microprofile.enricher.AbstractMicroprofileHealthCheckEnricher;
 
+import java.util.Properties;
+
 import static org.eclipse.jkube.helidon.HelidonUtils.extractPort;
-import static org.eclipse.jkube.helidon.HelidonUtils.getHelidonConfiguration;
 import static org.eclipse.jkube.helidon.HelidonUtils.hasHelidonHealthDependency;
+import static org.eclipse.jkube.helidon.HelidonUtils.resolveHelidonApplicationConfigProperties;
 import static org.eclipse.jkube.kit.common.Configs.asInteger;
 
 public class HelidonHealthCheckEnricher extends AbstractMicroprofileHealthCheckEnricher {
   private static final String DEFAULT_HELIDON_PORT = "8080";
+  private final Properties helidonApplicationConfig;
+
   public HelidonHealthCheckEnricher(JKubeEnricherContext buildContext) {
     super(buildContext, "jkube-healthcheck-helidon");
+    helidonApplicationConfig = resolveHelidonApplicationConfigProperties(log, getContext().getProject());
   }
 
   @Override
@@ -34,6 +39,6 @@ public class HelidonHealthCheckEnricher extends AbstractMicroprofileHealthCheckE
 
   @Override
   protected int getPort() {
-    return asInteger(extractPort(getHelidonConfiguration(getContext().getProject()), DEFAULT_HELIDON_PORT));
+    return asInteger(extractPort(helidonApplicationConfig, DEFAULT_HELIDON_PORT));
   }
 }

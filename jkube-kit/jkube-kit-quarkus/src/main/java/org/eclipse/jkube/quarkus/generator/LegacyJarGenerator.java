@@ -21,8 +21,9 @@ import org.eclipse.jkube.kit.common.AssemblyFileSet;
 import org.eclipse.jkube.kit.common.JavaProject;
 import org.eclipse.jkube.kit.common.util.FileUtil;
 
+import java.util.Properties;
+
 import static org.eclipse.jkube.quarkus.QuarkusUtils.findSingleFileThatEndsWith;
-import static org.eclipse.jkube.quarkus.QuarkusUtils.getQuarkusConfiguration;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.runnerSuffix;
 
 public class LegacyJarGenerator extends AbstractQuarkusNestedGenerator {
@@ -32,7 +33,7 @@ public class LegacyJarGenerator extends AbstractQuarkusNestedGenerator {
   }
 
   @Override
-  public AssemblyConfiguration createAssemblyConfiguration() {
+  public AssemblyConfiguration createAssemblyConfiguration(Properties quarkusApplicationConfiguration) {
     final JavaProject project = getProject();
     AssemblyFileSet.AssemblyFileSetBuilder libFileSet = createFileSet()
       .directory(FileUtil.getRelativePath(project.getBaseDirectory(), project.getBuildDirectory()))
@@ -40,7 +41,7 @@ public class LegacyJarGenerator extends AbstractQuarkusNestedGenerator {
       .fileMode("0640");
     AssemblyFileSet.AssemblyFileSetBuilder artifactFileSet = createFileSet()
       .directory(FileUtil.getRelativePath(project.getBaseDirectory(), project.getBuildDirectory()))
-      .include(findSingleFileThatEndsWith(project, runnerSuffix(getQuarkusConfiguration(project)) + ".jar"))
+      .include(findSingleFileThatEndsWith(project, runnerSuffix(quarkusApplicationConfiguration) + ".jar"))
       .fileMode("0640");
     return AssemblyConfiguration.builder()
       .targetDir(getTargetDir())

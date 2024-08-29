@@ -14,6 +14,7 @@
 package org.eclipse.jkube.micronaut.enricher;
 
 import java.util.Collections;
+import java.util.Properties;
 
 import org.eclipse.jkube.kit.common.Configs;
 import org.eclipse.jkube.kit.config.image.ImageConfiguration;
@@ -27,12 +28,12 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import static org.eclipse.jkube.kit.common.Configs.asInteger;
-import static org.eclipse.jkube.kit.common.util.JKubeProjectUtil.getClassLoader;
-import static org.eclipse.jkube.micronaut.MicronautUtils.getMicronautConfiguration;
 import static org.eclipse.jkube.micronaut.MicronautUtils.hasMicronautPlugin;
 import static org.eclipse.jkube.micronaut.MicronautUtils.isHealthEnabled;
+import static org.eclipse.jkube.micronaut.MicronautUtils.resolveMicronautApplicationConfigProperties;
 
 public class MicronautHealthCheckEnricher extends AbstractHealthCheckEnricher {
+  private final Properties micronautApplicationConfiguration;
 
   @AllArgsConstructor
   private enum Config implements Configs.Config {
@@ -55,6 +56,7 @@ public class MicronautHealthCheckEnricher extends AbstractHealthCheckEnricher {
 
   public MicronautHealthCheckEnricher(JKubeEnricherContext buildContext) {
     super(buildContext, "jkube-healthcheck-micronaut");
+    this.micronautApplicationConfiguration = resolveMicronautApplicationConfigProperties(log, getContext().getProject());
   }
 
   @Override
@@ -77,7 +79,7 @@ public class MicronautHealthCheckEnricher extends AbstractHealthCheckEnricher {
     if (!hasMicronautPlugin(getContext().getProject())){
       return false;
     }
-    return isHealthEnabled(getMicronautConfiguration(getContext().getProject()));
+    return isHealthEnabled(micronautApplicationConfiguration);
   }
 
   private Probe buildProbe(Integer initialDelaySeconds, Integer periodSeconds){

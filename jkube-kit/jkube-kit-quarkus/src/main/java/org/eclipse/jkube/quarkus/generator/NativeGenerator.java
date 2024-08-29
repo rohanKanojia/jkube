@@ -26,7 +26,6 @@ import org.eclipse.jkube.kit.common.util.FileUtil;
 import java.util.Properties;
 
 import static org.eclipse.jkube.quarkus.QuarkusUtils.findSingleFileThatEndsWith;
-import static org.eclipse.jkube.quarkus.QuarkusUtils.getQuarkusConfiguration;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.runnerSuffix;
 
 public class NativeGenerator extends AbstractQuarkusNestedGenerator {
@@ -54,9 +53,9 @@ public class NativeGenerator extends AbstractQuarkusNestedGenerator {
   }
 
   @Override
-  public Arguments getBuildEntryPoint() {
+  public Arguments getBuildEntryPoint(Properties quarkusConfiguration) {
     final Arguments.ArgumentsBuilder ab = Arguments.builder();
-    ab.execArgument("./" + findSingleFileThatEndsWith(getProject(), runnerSuffix(getQuarkusConfiguration(getProject()))));
+    ab.execArgument("./" + findSingleFileThatEndsWith(getProject(), runnerSuffix(quarkusConfiguration)));
     return ab.build();
   }
 
@@ -71,9 +70,8 @@ public class NativeGenerator extends AbstractQuarkusNestedGenerator {
   }
 
   @Override
-  public AssemblyConfiguration createAssemblyConfiguration() {
+  public AssemblyConfiguration createAssemblyConfiguration(Properties quarkusConfiguration) {
     final JavaProject project = getProject();
-    final Properties quarkusConfiguration = getQuarkusConfiguration(project);
     final AssemblyFileSet artifactFileSet = createFileSet()
       .directory(FileUtil.getRelativePath(project.getBaseDirectory(), project.getBuildDirectory()))
       .include(findSingleFileThatEndsWith(project, runnerSuffix(quarkusConfiguration)))

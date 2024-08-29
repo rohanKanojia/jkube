@@ -14,24 +14,35 @@
 package org.eclipse.jkube.kit.common.util;
 
 import org.eclipse.jkube.kit.common.JavaProject;
+import org.eclipse.jkube.kit.common.KitLogger;
 
+import java.net.URL;
 import java.util.Properties;
 
-import static org.eclipse.jkube.kit.common.util.PropertiesUtil.fromApplicationConfig;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.fromApplicationConfigSource;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.mergeResourcePropertiesWithProjectProperties;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.readPropertiesFromResource;
+
 
 public class ThorntailUtil {
     private static final String[] THORNTAIL_APP_CONFIG_FILES_LIST = new String[] {"project-defaults.yml"};
+    private static final String THORNTAIL_HTTP_PORT_PROPERTY = "thorntail.http.port";
 
     private ThorntailUtil() {}
 
-    /**
-     * Returns the thorntail configuration (supports `project-defaults.yml`)
-     * or an empty properties object if not found
-     *
-     * @param javaProject Java Project
-     * @return thorntail configuration properties
-     */
-    public static Properties getThorntailProperties(JavaProject javaProject) {
-        return fromApplicationConfig(javaProject, THORNTAIL_APP_CONFIG_FILES_LIST);
+    public static Properties resolveThorntailAppConfigProperties(KitLogger log, JavaProject javaProject) {
+        URL propertySource = fromApplicationConfigSource(javaProject, THORNTAIL_APP_CONFIG_FILES_LIST);
+        if (propertySource != null) {
+            log.info("Thorntail Application Config loaded from : %s", propertySource);
+        }
+        return mergeResourcePropertiesWithProjectProperties(readPropertiesFromResource(propertySource), javaProject);
+    }
+
+    public static String resolveThorntailWebPortFromThorntailConfig(Properties thorntailApplicationConfig) {
+        thorntailApplicationConfig.putAll(System.getProperties());
+        if (thorntailApplicationConfig.containsKey(THORNTAIL_HTTP_PORT_PROPERTY)) {
+            return (String) thorntailApplicationConfig.get(THORNTAIL_HTTP_PORT_PROPERTY);
+        }
+        return null;
     }
 }

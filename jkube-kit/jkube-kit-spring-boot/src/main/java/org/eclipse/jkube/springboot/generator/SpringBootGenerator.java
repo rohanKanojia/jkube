@@ -42,6 +42,7 @@ import static org.eclipse.jkube.springboot.generator.SpringBootGenerator.Config.
  * @author roland
  */
 public class SpringBootGenerator extends JavaExecGenerator {
+    private final SpringBootConfiguration springBootConfiguration;
 
     @AllArgsConstructor
     public enum Config implements Configs.Config {
@@ -58,6 +59,7 @@ public class SpringBootGenerator extends JavaExecGenerator {
     public SpringBootGenerator(GeneratorContext context) {
         super(context, "spring-boot");
         nestedGenerator = SpringBootNestedGenerator.from(context, getGeneratorConfig(), detectFatJar());
+        springBootConfiguration = SpringBootConfiguration.from(getContext().getProject());
     }
 
     @Override
@@ -108,7 +110,7 @@ public class SpringBootGenerator extends JavaExecGenerator {
 
     @Override
     protected String getDefaultWebPort() {
-        return "" + SpringBootConfiguration.from(getProject()).getServerPort();
+        return "" + springBootConfiguration.getServerPort();
     }
 
     @Override

@@ -20,11 +20,18 @@ import org.eclipse.jkube.kit.common.util.JKubeProjectUtil;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+
+import static org.eclipse.jkube.kit.common.util.ThorntailUtil.resolveThorntailAppConfigProperties;
+import static org.eclipse.jkube.kit.common.util.ThorntailUtil.resolveThorntailWebPortFromThorntailConfig;
 
 public class ThorntailV2Generator extends JavaExecGenerator {
+    private final Properties thorntailApplicationConfig;
 
     public ThorntailV2Generator(GeneratorContext context) {
         super(context, "thorntail-v2", JDK.JDK_11);
+        thorntailApplicationConfig = resolveThorntailAppConfigProperties(log, getContext().getProject());
     }
 
     @Override
@@ -45,5 +52,11 @@ public class ThorntailV2Generator extends JavaExecGenerator {
         ret.put("AB_PROMETHEUS_OFF", "true");
         ret.put("AB_OFF", "true");
         return ret;
+    }
+
+    @Override
+    protected String getDefaultWebPort() {
+        return Optional.ofNullable(resolveThorntailWebPortFromThorntailConfig(thorntailApplicationConfig))
+          .orElse(super.getDefaultWebPort());
     }
 }

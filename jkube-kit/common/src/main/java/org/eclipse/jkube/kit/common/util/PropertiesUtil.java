@@ -98,20 +98,33 @@ public class PropertiesUtil {
     return map;
   }
 
-  public static Properties fromApplicationConfig(JavaProject javaProject, String[] appConfigSources) {
+  public static URL fromApplicationConfigSource(JavaProject javaProject, String[] appConfigSources) {
     final URLClassLoader urlClassLoader = getClassLoader(javaProject);
     for (String source : appConfigSources) {
-      final Properties properties;
-      if (source.endsWith(".properties")) {
-        properties = getPropertiesFromResource(urlClassLoader.findResource(source));
-      } else {
-        properties = getPropertiesFromYamlResource(urlClassLoader.findResource(source));
-      }
+      URL appConfigSourceUrl = urlClassLoader.findResource(source);
+      final Properties properties = readPropertiesFromResource(appConfigSourceUrl);
       // Consider only the first non-empty application config source
       if (!properties.isEmpty()) {
-        properties.putAll(toMap(javaProject.getProperties()));
-        return properties;
+        return appConfigSourceUrl;
       }
+    }
+    return null;
+  }
+
+  public static Properties readPropertiesFromResource(URL source) {
+    Properties properties = new Properties();
+    if (source != null && source.getFile().endsWith(".properties")) {
+      properties = getPropertiesFromResource(source);
+    } else if (source != null) {
+      properties = getPropertiesFromYamlResource(source);
+    }
+    return properties;
+  }
+
+  public static Properties mergeResourcePropertiesWithProjectProperties(Properties resourceProperties, JavaProject javaProject) {
+    if (resourceProperties != null && !resourceProperties.isEmpty()) {
+      resourceProperties.putAll(toMap(javaProject.getProperties()));
+      return resourceProperties;
     }
     return javaProject.getProperties();
   }

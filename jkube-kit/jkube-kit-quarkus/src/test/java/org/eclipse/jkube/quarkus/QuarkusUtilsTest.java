@@ -23,6 +23,7 @@ import java.util.Properties;
 
 import org.eclipse.jkube.kit.common.Dependency;
 import org.eclipse.jkube.kit.common.JavaProject;
+import org.eclipse.jkube.kit.common.KitLogger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -32,11 +33,16 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.concatPath;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.extractPort;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.findQuarkusVersion;
-import static org.eclipse.jkube.quarkus.QuarkusUtils.getQuarkusConfiguration;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.isStartupEndpointSupported;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.resolveCompleteQuarkusHealthRootPath;
+import static org.eclipse.jkube.quarkus.QuarkusUtils.resolveQuarkusApplicationProperties;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.resolveQuarkusLivenessPath;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.resolveQuarkusStartupPath;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class QuarkusUtilsTest {
 
@@ -44,6 +50,7 @@ class QuarkusUtilsTest {
   Path temporaryFolder;
 
   private JavaProject javaProject;
+  private KitLogger kitLogger;
 
   @BeforeEach
   void setUp() throws IOException {
@@ -51,6 +58,7 @@ class QuarkusUtilsTest {
         .properties(new Properties())
         .outputDirectory(Files.createDirectory(temporaryFolder.resolve("target")).toFile())
         .build();
+    kitLogger = spy(new KitLogger.SilentLogger());
   }
 
   @Test
@@ -98,7 +106,7 @@ class QuarkusUtilsTest {
   }
 
   @Test
-  void getQuarkusConfiguration_propertiesAndYamlProjectProperties_shouldUseProjectProperties() {
+  void resolveQuarkusApplicationProperties_propertiesAndYamlProjectProperties_shouldUseProjectProperties() {
     // Given
     javaProject.getProperties().put("quarkus.http.port", "42");
     javaProject.setCompileClassPathElements(Arrays.asList(
@@ -106,52 +114,56 @@ class QuarkusUtilsTest {
         QuarkusUtilsTest.class.getResource("/utils-test/config/properties/").getPath()
     ));
     // When
-    final Properties props = getQuarkusConfiguration(javaProject);
+    final Properties props = resolveQuarkusApplicationProperties(kitLogger, javaProject);
     // Then
     assertThat(props).containsOnly(
         entry("quarkus.http.port", "42"),
         entry("%dev.quarkus.http.port", "8082"));
+    verify(kitLogger, times(1)).debug("Quarkus Application Config loaded from : %s", QuarkusUtilsTest.class.getResource("/utils-test/config/properties/application.properties"));
   }
 
   @Test
-  void getQuarkusConfiguration_propertiesAndYaml_shouldUseProperties() {
+  void resolveQuarkusApplicationProperties_propertiesAndYaml_shouldUseProperties() {
     // Given
     javaProject.setCompileClassPathElements(Arrays.asList(
         QuarkusUtilsTest.class.getResource("/utils-test/config/yaml/").getPath(),
         QuarkusUtilsTest.class.getResource("/utils-test/config/properties/").getPath()
     ));
     // When
-    final Properties props = getQuarkusConfiguration(javaProject);
+    final Properties props = resolveQuarkusApplicationProperties(kitLogger, javaProject);
     // Then
     assertThat(props).containsOnly(
         entry("quarkus.http.port", "1337"),
         entry("%dev.quarkus.http.port", "8082"));
+    verify(kitLogger, times(1)).debug("Quarkus Application Config loaded from : %s", QuarkusUtilsTest.class.getResource("/utils-test/config/properties/application.properties"));
   }
 
   @Test
-  void getQuarkusConfiguration_yamlOnly_shouldUseYaml() {
+  void resolveQuarkusApplicationProperties_yamlOnly_shouldUseYaml() {
     // Given
     javaProject.setCompileClassPathElements(Collections.singletonList(
         QuarkusUtilsTest.class.getResource("/utils-test/config/yaml/").getPath()
     ));
     // When
-    final Properties props = getQuarkusConfiguration(javaProject);
+    final Properties props = resolveQuarkusApplicationProperties(kitLogger, javaProject);
     // Then
     assertThat(props).containsOnly(
         entry("quarkus.http.port", "31337"),
         entry("%dev.quarkus.http.port", "13373"));
+    verify(kitLogger, times(1)).debug("Quarkus Application Config loaded from : %s", QuarkusUtilsTest.class.getResource("/utils-test/config/yaml/application.yml"));
   }
 
   @Test
-  void getQuarkusConfiguration_noConfigFiles_shouldReturnEmpty() {
+  void resolveQuarkusApplicationProperties_noConfigFiles_shouldReturnEmpty() {
     // Given
     javaProject.setCompileClassPathElements(Collections.singletonList(
         QuarkusUtilsTest.class.getResource("/").getPath()
     ));
     // When
-    final Properties props = getQuarkusConfiguration(javaProject);
+    final Properties props = resolveQuarkusApplicationProperties(kitLogger, javaProject);
     // Then
     assertThat(props).isEmpty();
+    verify(kitLogger, times(0)).debug(anyString(), any());
   }
 
   @Test
@@ -184,7 +196,7 @@ class QuarkusUtilsTest {
     javaProject.setProperties(properties);
 
     // When
-    String resolvedHealthPath = resolveCompleteQuarkusHealthRootPath(javaProject, "");
+    String resolvedHealthPath = resolveCompleteQuarkusHealthRootPath(javaProject, properties, "");
 
     // Then
     assertThat(resolvedHealthPath).isNotEmpty().isEqualTo("/q/health");
@@ -199,7 +211,7 @@ class QuarkusUtilsTest {
     javaProject.setDependencies(quarkusDependencyWithVersion("1.13.7.Final"));
 
     // When
-    String resolvedHealthPath = resolveCompleteQuarkusHealthRootPath(javaProject, "");
+    String resolvedHealthPath = resolveCompleteQuarkusHealthRootPath(javaProject, properties, "");
 
     // Then
     assertThat(resolvedHealthPath).isNotEmpty().isEqualTo("/health");
@@ -215,7 +227,7 @@ class QuarkusUtilsTest {
     javaProject.setDependencies(quarkusDependencyWithVersion("1.10.5.Final"));
 
     // When
-    String resolvedHealthPath = resolveCompleteQuarkusHealthRootPath(javaProject, "");
+    String resolvedHealthPath = resolveCompleteQuarkusHealthRootPath(javaProject, properties, "");
 
     // Then
     assertThat(resolvedHealthPath).isNotEmpty().isEqualTo("/root/health");
@@ -231,7 +243,7 @@ class QuarkusUtilsTest {
     javaProject.setDependencies(quarkusDependencyWithVersion("1.13.7.Final"));
 
     // When
-    String resolvedHealthPath = resolveCompleteQuarkusHealthRootPath(javaProject, "");
+    String resolvedHealthPath = resolveCompleteQuarkusHealthRootPath(javaProject, properties, "");
 
     // Then
     assertThat(resolvedHealthPath).isNotEmpty().isEqualTo("/health");
@@ -247,7 +259,7 @@ class QuarkusUtilsTest {
     javaProject.setDependencies(quarkusDependencyWithVersion("1.13.7.Final"));
 
     // When
-    String resolvedHealthPath = resolveCompleteQuarkusHealthRootPath(javaProject, "");
+    String resolvedHealthPath = resolveCompleteQuarkusHealthRootPath(javaProject, properties, "");
 
     // Then
     assertThat(resolvedHealthPath).isNotEmpty().isEqualTo("/q/health");
@@ -264,7 +276,7 @@ class QuarkusUtilsTest {
     javaProject.setDependencies(quarkusDependencyWithVersion("1.13.7.Final"));
 
     // When
-    String resolvedHealthPath = resolveCompleteQuarkusHealthRootPath(javaProject, "");
+    String resolvedHealthPath = resolveCompleteQuarkusHealthRootPath(javaProject, properties, "");
 
     // Then
     assertThat(resolvedHealthPath).isNotEmpty().isEqualTo("/q/health");
@@ -275,10 +287,9 @@ class QuarkusUtilsTest {
     // Given
     Properties properties = new Properties();
     properties.setProperty("quarkus.smallrye-health.liveness-path", "liveness");
-    javaProject.setProperties(properties);
 
     // When
-    String resolvedHealthPath = resolveQuarkusLivenessPath(javaProject);
+    String resolvedHealthPath = resolveQuarkusLivenessPath(properties);
 
     // Then
     assertThat(resolvedHealthPath).isNotEmpty().isEqualTo("liveness");
@@ -289,9 +300,8 @@ class QuarkusUtilsTest {
     // Given
     Properties properties = new Properties();
     properties.setProperty("quarkus.smallrye-health.startup-path", "startup");
-    javaProject.setProperties(properties);
     // When
-    String resolvedStartupPath = resolveQuarkusStartupPath(javaProject);
+    String resolvedStartupPath = resolveQuarkusStartupPath(properties);
     // Then
     assertThat(resolvedStartupPath).isNotEmpty()
             .isEqualTo("startup");

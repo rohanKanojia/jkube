@@ -14,6 +14,9 @@
 package org.eclipse.jkube.micronaut.generator;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +43,7 @@ class MicronautGeneratorTest {
   private MicronautGenerator micronautGenerator;
 
   @BeforeEach
-  void setUp() {
+  void setUp(@TempDir Path temporaryFolder) throws IOException {
     final Properties projectProperties = new Properties();
     projectProperties.put("jkube.generator.micronaut.mainClass", "com.example.Main");
     ctx = GeneratorContext.builder()
@@ -48,6 +51,7 @@ class MicronautGeneratorTest {
       .project(JavaProject.builder()
         .version("1.33.7-SNAPSHOT")
         .properties(projectProperties)
+        .outputDirectory(Files.createDirectory(temporaryFolder.resolve("target")).toFile())
         .build())
       .build();
     micronautGenerator = new MicronautGenerator(ctx);

@@ -52,10 +52,12 @@ import static org.eclipse.jkube.springboot.SpringBootDevtoolsUtils.getSpringBoot
 public class SpringBootWatcher extends BaseWatcher {
 
     private final PortForwardService portForwardService;
+    private final SpringBootConfiguration springBootConfiguration;
 
     public SpringBootWatcher(WatcherContext watcherContext) {
         super(watcherContext, "spring-boot");
         portForwardService = new PortForwardService(watcherContext.getLogger());
+        springBootConfiguration = SpringBootConfiguration.from(getContext().getBuildContext().getProject());
     }
 
     @Override
@@ -99,8 +101,6 @@ public class SpringBootWatcher extends BaseWatcher {
             return null;
         }
 
-        final SpringBootConfiguration springBootConfiguration = SpringBootConfiguration.from(
-          getContext().getBuildContext().getProject());
         int localPort = IoUtil.getFreeRandomPort();
         int containerPort = springBootConfiguration.getServerPort();
         portForwardService.forwardPortAsync(kubernetes, selector, containerPort, localPort);

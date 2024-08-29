@@ -21,18 +21,21 @@ import org.eclipse.jkube.kit.config.image.ImageConfiguration;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 
 import static org.eclipse.jkube.helidon.HelidonUtils.extractPort;
-import static org.eclipse.jkube.helidon.HelidonUtils.getHelidonConfiguration;
 import static org.eclipse.jkube.helidon.HelidonUtils.hasHelidonDependencies;
+import static org.eclipse.jkube.helidon.HelidonUtils.resolveHelidonApplicationConfigProperties;
 
 public class HelidonGenerator extends JavaExecGenerator {
   public static final String HELIDON = "helidon";
   private final HelidonNestedGenerator nestedGenerator;
+  private final Properties helidonApplicationConfig;
 
   public HelidonGenerator(GeneratorContext context) {
     super(context, HELIDON);
     nestedGenerator = HelidonNestedGenerator.from(context, getGeneratorConfig());
+    helidonApplicationConfig = resolveHelidonApplicationConfigProperties(log, getContext().getProject());
   }
 
   @Override
@@ -62,7 +65,7 @@ public class HelidonGenerator extends JavaExecGenerator {
 
   @Override
   protected String getDefaultWebPort() {
-    return extractPort(getHelidonConfiguration(getProject()), super.getDefaultWebPort());
+    return extractPort(helidonApplicationConfig, super.getDefaultWebPort());
   }
 
   @Override

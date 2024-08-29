@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 
 import org.eclipse.jkube.generator.api.GeneratorContext;
 import org.eclipse.jkube.generator.javaexec.JavaExecGenerator;
@@ -31,18 +32,20 @@ import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 import static org.eclipse.jkube.quarkus.QuarkusUtils.extractPort;
-import static org.eclipse.jkube.quarkus.QuarkusUtils.getQuarkusConfiguration;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.hasQuarkusPlugin;
+import static org.eclipse.jkube.quarkus.QuarkusUtils.resolveQuarkusApplicationProperties;
 
 public class QuarkusGenerator extends JavaExecGenerator {
 
   public static final String QUARKUS = "quarkus";
 
   private final QuarkusNestedGenerator nestedGenerator;
+  private final Properties quarkusApplicationConfig;
 
   public QuarkusGenerator(GeneratorContext context) {
     super(context, QUARKUS);
-    nestedGenerator = QuarkusNestedGenerator.from(context, getGeneratorConfig());
+    quarkusApplicationConfig = resolveQuarkusApplicationProperties(log, getContext().getProject());
+    nestedGenerator = QuarkusNestedGenerator.from(context, getGeneratorConfig(), quarkusApplicationConfig);
   }
 
   @AllArgsConstructor
@@ -68,7 +71,7 @@ public class QuarkusGenerator extends JavaExecGenerator {
 
   @Override
   protected String getDefaultWebPort() {
-    return extractPort(getProject(), getQuarkusConfiguration(getProject()), super.getDefaultWebPort());
+    return extractPort(getProject(), quarkusApplicationConfig, super.getDefaultWebPort());
   }
 
   @Override
@@ -88,7 +91,7 @@ public class QuarkusGenerator extends JavaExecGenerator {
 
   @Override
   protected AssemblyConfiguration createAssembly() {
-    return nestedGenerator.createAssemblyConfiguration();
+    return nestedGenerator.createAssemblyConfiguration(quarkusApplicationConfig);
   }
 
   @Override
@@ -98,7 +101,7 @@ public class QuarkusGenerator extends JavaExecGenerator {
 
   @Override
   protected Arguments getBuildEntryPoint() {
-    return nestedGenerator.getBuildEntryPoint();
+    return nestedGenerator.getBuildEntryPoint(quarkusApplicationConfig);
   }
 
   @Override

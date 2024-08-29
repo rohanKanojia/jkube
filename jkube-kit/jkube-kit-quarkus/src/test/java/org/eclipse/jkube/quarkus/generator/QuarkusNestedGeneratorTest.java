@@ -66,7 +66,7 @@ class QuarkusNestedGeneratorTest {
     @DisplayName("with no settings, should return FastJarGenerator")
     void withNoSettingsAndNoFiles_shouldReturnFastJar() {
       // When
-      final QuarkusNestedGenerator result = QuarkusNestedGenerator.from(context, config);
+      final QuarkusNestedGenerator result = QuarkusNestedGenerator.from(context, config, projectProperties);
       // Then
       assertThat(result).isInstanceOf(FastJarGenerator.class);
     }
@@ -77,7 +77,7 @@ class QuarkusNestedGeneratorTest {
       // Given
       Files.createFile(target.toPath().resolve("-runner"));
       // When
-      final QuarkusNestedGenerator result = QuarkusNestedGenerator.from(context, config);
+      final QuarkusNestedGenerator result = QuarkusNestedGenerator.from(context, config, projectProperties);
       // Then
       assertThat(result).isInstanceOf(NativeGenerator.class);
     }
@@ -89,7 +89,7 @@ class QuarkusNestedGeneratorTest {
       projectProperties.put("quarkus.package.runner-suffix", "-coyote");
       Files.createFile(target.toPath().resolve("-coyote"));
       // When
-      final QuarkusNestedGenerator result = QuarkusNestedGenerator.from(context, config);
+      final QuarkusNestedGenerator result = QuarkusNestedGenerator.from(context, config, projectProperties);
       // Then
       assertThat(result).isInstanceOf(NativeGenerator.class);
     }
@@ -100,7 +100,7 @@ class QuarkusNestedGeneratorTest {
       // Given
       Files.createFile(target.toPath().resolve("-runner.jar"));
       // When
-      final QuarkusNestedGenerator result = QuarkusNestedGenerator.from(context, config);
+      final QuarkusNestedGenerator result = QuarkusNestedGenerator.from(context, config, projectProperties);
       // Then
       assertThat(result).isInstanceOf(UberJarGenerator.class);
     }
@@ -112,7 +112,7 @@ class QuarkusNestedGeneratorTest {
       projectProperties.put("quarkus.package.runner-suffix", "-coyote");
       Files.createFile(target.toPath().resolve("-coyote.jar"));
       // When
-      final QuarkusNestedGenerator result = QuarkusNestedGenerator.from(context, config);
+      final QuarkusNestedGenerator result = QuarkusNestedGenerator.from(context, config, projectProperties);
       // Then
       assertThat(result).isInstanceOf(UberJarGenerator.class);
     }
@@ -124,7 +124,7 @@ class QuarkusNestedGeneratorTest {
       Files.createFile(target.toPath().resolve("-runner.jar"));
       Files.createDirectory(target.toPath().resolve("lib"));
       // When
-      final QuarkusNestedGenerator result = QuarkusNestedGenerator.from(context, config);
+      final QuarkusNestedGenerator result = QuarkusNestedGenerator.from(context, config, projectProperties);
       // Then
       assertThat(result).isInstanceOf(LegacyJarGenerator.class);
     }
@@ -136,7 +136,7 @@ class QuarkusNestedGeneratorTest {
       // Given
       projectProperties.put("quarkus.package.type", packageType);
       // When
-      final QuarkusNestedGenerator result = QuarkusNestedGenerator.from(context, config);
+      final QuarkusNestedGenerator result = QuarkusNestedGenerator.from(context, config, projectProperties);
       // Then
       assertThat(result)
         .isInstanceOf(expectedNestedGeneratorClass);
@@ -165,7 +165,7 @@ class QuarkusNestedGeneratorTest {
       // Given
       projectProperties.put("quarkus.package.type", packageType);
       // When
-      final boolean result = QuarkusNestedGenerator.from(context, config).isFatJar();
+      final boolean result = QuarkusNestedGenerator.from(context, config, projectProperties).isFatJar();
       // Then
       assertThat(result)
         .isEqualTo(isFatJar);

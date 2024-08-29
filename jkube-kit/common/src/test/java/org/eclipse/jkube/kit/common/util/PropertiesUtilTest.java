@@ -14,6 +14,7 @@
 package org.eclipse.jkube.kit.common.util;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -123,8 +124,8 @@ class PropertiesUtilTest {
   }
 
   @Nested
-  @DisplayName("fromApplicationConfig")
-  class FromApplicationConfig {
+  @DisplayName("application configuration files in project classpath")
+  class ApplicationConfig {
     @TempDir
     private Path temporaryFolder;
 
@@ -139,53 +140,53 @@ class PropertiesUtilTest {
         .build();
     }
 
-    @Test
-    @DisplayName("no source provided, return empty Properties")
-    void noSourceProvided_thenReturnEmptyProperty() {
-      // When
-      Properties properties = PropertiesUtil.fromApplicationConfig(javaProject, new String[0]);
-      // Then
-      assertThat(properties).isEmpty();
-    }
+    @Nested
+    @DisplayName("fromApplicationConfigSource")
+    class FromApplicationConfigSource {
+      @Test
+      @DisplayName("no source provided, return empty Properties")
+      void noSourceProvided_thenReturnEmptyProperty() {
+        // When
+        URL source = PropertiesUtil.fromApplicationConfigSource(javaProject, new String[0]);
+        // Then
+        assertThat(source).isNull();
+      }
 
-    @Test
-    @DisplayName("application.yml source")
-    void yml() {
-      // When
-      Properties properties = PropertiesUtil.fromApplicationConfig(javaProject, new String[]{"application.yml"});
-      // Then
-      assertThat(properties).containsExactly(
-        entry("application.name", "name-via-yaml"));
-    }
+      @Test
+      @DisplayName("application.yml source")
+      void yml() {
+        // When
+        URL source = PropertiesUtil.fromApplicationConfigSource(javaProject, new String[]{"application.yml"});
+        // Then
+        assertThat(source).isEqualTo(PropertiesUtil.class.getResource("/util/properties-util/yaml/application.yml"));
+      }
 
-    @Test
-    @DisplayName("application.properties source")
-    void properties() {
-      // When
-      Properties properties = PropertiesUtil.fromApplicationConfig(javaProject, new String[]{"application.properties"});
-      // Then
-      assertThat(properties).containsExactly(
-        entry("application.name", "name-via-properties"));
-    }
+      @Test
+      @DisplayName("application.properties source")
+      void properties() {
+        // When
+        URL source = PropertiesUtil.fromApplicationConfigSource(javaProject, new String[]{"application.properties"});
+        // Then
+        assertThat(source).isEqualTo(PropertiesUtil.class.getResource("/util/properties-util/properties/application.properties"));
+      }
 
-    @Test
-    @DisplayName("multiple sources provided, then first one takes precedence")
-    void multipleSources_thenFirstOneTakesPrecedence() {
-      // When
-      Properties properties = PropertiesUtil.fromApplicationConfig(javaProject, new String[]{"application.properties", "application.yml"});
-      // Then
-      assertThat(properties).containsExactly(
-        entry("application.name", "name-via-properties"));
-    }
+      @Test
+      @DisplayName("multiple sources provided, then first one takes precedence")
+      void multipleSources_thenFirstOneTakesPrecedence() {
+        // When
+        URL source = PropertiesUtil.fromApplicationConfigSource(javaProject, new String[]{"application.properties", "application.yml"});
+        // Then
+        assertThat(source).isEqualTo(PropertiesUtil.class.getResource("/util/properties-util/properties/application.properties"));
+      }
 
-    @Test
-    @DisplayName("multiple sources provided, then first one takes precedence")
-    void multipleSourcesWithEmpty_thenFirstNonEmptyTakesPrecedence() {
-      // When
-      Properties properties = PropertiesUtil.fromApplicationConfig(javaProject, new String[]{"not-there", "application.yml", "application.properties"});
-      // Then
-      assertThat(properties).containsExactly(
-        entry("application.name", "name-via-yaml"));
+      @Test
+      @DisplayName("multiple sources provided, then first one takes precedence")
+      void multipleSourcesWithEmpty_thenFirstNonEmptyTakesPrecedence() {
+        // When
+        URL source = PropertiesUtil.fromApplicationConfigSource(javaProject, new String[]{"not-there", "application.yml", "application.properties"});
+        // Then
+        assertThat(source).isEqualTo(PropertiesUtil.class.getResource("/util/properties-util/yaml/application.yml"));
+      }
     }
   }
 }

@@ -22,6 +22,7 @@ import org.eclipse.jkube.kit.common.JavaProject;
 import org.eclipse.jkube.kit.common.util.FileUtil;
 
 import java.io.File;
+import java.util.Properties;
 
 public class FastJarGenerator extends AbstractQuarkusNestedGenerator {
 
@@ -30,7 +31,7 @@ public class FastJarGenerator extends AbstractQuarkusNestedGenerator {
   }
 
   @Override
-  public AssemblyConfiguration createAssemblyConfiguration() {
+  public AssemblyConfiguration createAssemblyConfiguration(Properties quarkusConfiguration) {
     final JavaProject project = getProject();
     final File quarkusAppDirectory = new File(project.getBuildDirectory(), "quarkus-app");
     if (!quarkusAppDirectory.exists()) {

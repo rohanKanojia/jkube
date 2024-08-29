@@ -14,18 +14,24 @@
 package org.eclipse.jkube.quarkus;
 
 import java.io.File;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jkube.kit.common.JavaProject;
+import org.eclipse.jkube.kit.common.KitLogger;
 import org.eclipse.jkube.kit.common.util.JKubeProjectUtil;
 
 import org.apache.commons.lang3.StringUtils;
 
 import static org.eclipse.jkube.kit.common.util.FileUtil.stripPrefix;
-import static org.eclipse.jkube.kit.common.util.PropertiesUtil.fromApplicationConfig;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.fromApplicationConfigSource;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.mergeResourcePropertiesWithProjectProperties;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.readPropertiesFromResource;
 import static org.eclipse.jkube.kit.common.util.SemanticVersionUtil.isVersionAtLeast;
 
 public class QuarkusUtils {
@@ -93,11 +99,16 @@ public class QuarkusUtils {
    * <p> Any property overridden in the project's properties (e.g. Maven properties) will take precedence over the ones
    * defined in the static configuration files.
    *
-   * @param project from which to read the configuration
+   * @param log KitLogger
+   * @param javaProject from which to read the configuration
    * @return the applicable Quarkus configuration properties
    */
-  public static Properties getQuarkusConfiguration(JavaProject project) {
-    return fromApplicationConfig(project, QUARKUS_APP_CONFIG_FILES_LIST);
+  public static Properties resolveQuarkusApplicationProperties(KitLogger log, JavaProject javaProject) {
+    URL propertySource = fromApplicationConfigSource(javaProject, QUARKUS_APP_CONFIG_FILES_LIST);
+    if (propertySource != null) {
+      log.debug("Quarkus Application Config loaded from : %s", propertySource);
+    }
+    return mergeResourcePropertiesWithProjectProperties(readPropertiesFromResource(propertySource), javaProject);
   }
 
   private static Optional<String> getActiveProfile(JavaProject project) {
@@ -110,34 +121,34 @@ public class QuarkusUtils {
   /**
    * Get Quarkus SmallRye Health readiness path from Quarkus configuration
    *
-   * @param javaProject {@link JavaProject} project for which health readiness path is required
+   * @param quarkusApplicationConfig {@link Properties} application config properties
    * @return a string containing the readiness path
    */
-  public static String resolveQuarkusReadinessPath(JavaProject javaProject) {
-    return getQuarkusConfiguration(javaProject)
-        .getProperty(QUARKUS_SMALLRYE_HEALTH_READINESS_PATH, DEFAULT_READINESS_SUBPATH);
+  public static String resolveQuarkusReadinessPath(Properties quarkusApplicationConfig) {
+    return quarkusApplicationConfig
+      .getProperty(QUARKUS_SMALLRYE_HEALTH_READINESS_PATH, DEFAULT_READINESS_SUBPATH);
   }
 
   /**
    * Get Quarkus SmallRye Health liveness path from Quarkus configuration
    *
-   * @param javaProject {@link JavaProject} project for which health liveness path is required
+   * @param quarkusApplicationConfig {@link Properties} project for which health liveness path is required
    * @return a string containing the liveness path
    */
-  public static String resolveQuarkusLivenessPath(JavaProject javaProject) {
-    return getQuarkusConfiguration(javaProject)
-        .getProperty(QUARKUS_SMALLRYE_HEALTH_LIVENESS_PATH, DEFAULT_LIVENESS_SUBPATH);
+  public static String resolveQuarkusLivenessPath(Properties quarkusApplicationConfig) {
+    return quarkusApplicationConfig
+      .getProperty(QUARKUS_SMALLRYE_HEALTH_LIVENESS_PATH, DEFAULT_LIVENESS_SUBPATH);
   }
 
   /**
    * Get Quarkus SmallRye Health startup path from Quarkus Configuration
    *
-   * @param javaProject {@link JavaProject} project for which health startup path is required
+   * @param quarkusApplicationConfig {@link Properties} project for which health startup path is required
    * @return a string containing the startup path
    */
-  public static String resolveQuarkusStartupPath(JavaProject javaProject) {
-    return getQuarkusConfiguration(javaProject)
-            .getProperty(QUARKUS_SMALLRYE_HEALTH_STARTUP_PATH, DEFAULT_STARTUP_SUBPATH);
+  public static String resolveQuarkusStartupPath(Properties quarkusApplicationConfig) {
+    return quarkusApplicationConfig
+      .getProperty(QUARKUS_SMALLRYE_HEALTH_STARTUP_PATH, DEFAULT_STARTUP_SUBPATH);
   }
 
   public static boolean hasQuarkusPlugin(JavaProject javaProject) {
@@ -171,9 +182,8 @@ public class QuarkusUtils {
    * @param subPath the applicable readiness/liveness subpath to append
    * @return a string containing fully qualified health root path
    */
-  public static String resolveCompleteQuarkusHealthRootPath(JavaProject javaProject, String subPath) {
+  public static String resolveCompleteQuarkusHealthRootPath(JavaProject javaProject, Properties quarkusProperties, String subPath) {
     final String quarkusVersion = findQuarkusVersion(javaProject);
-    final Properties quarkusProperties = getQuarkusConfiguration(javaProject);
     final String healthRootPath = quarkusProperties.getProperty(QUARKUS_SMALLRYE_HEALTH_ROOT_PATH, DEFAULT_HEALTH_ROOT_PATH);
     final String nonApplicationRootPath = resolveQuarkusNonApplicationRootPath(quarkusVersion, quarkusProperties);
     final String rootPath = quarkusProperties.getProperty(QUARKUS_HTTP_ROOT_PATH, DEFAULT_ROOT_PATH);
@@ -196,6 +206,10 @@ public class QuarkusUtils {
    */
   public static boolean isStartupEndpointSupported(JavaProject javaProject) {
     return isVersionAtLeast(QUARKUS_MAJOR_VERSION_SINCE_STARTUP_CHANGE, QUARKUS_MINOR_VERSION_SINCE_STARTUP_CHANGE, findQuarkusVersion(javaProject));
+  }
+
+  public static List<String> getQuarkusAppConfigFiles() {
+    return Arrays.asList(QUARKUS_APP_CONFIG_FILES_LIST);
   }
 
   private static String resolveQuarkusNonApplicationRootPath(String quarkusVersion, Properties quarkusProperties) {

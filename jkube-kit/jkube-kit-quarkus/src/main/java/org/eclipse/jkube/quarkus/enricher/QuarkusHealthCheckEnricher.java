@@ -13,10 +13,10 @@
  */
 package org.eclipse.jkube.quarkus.enricher;
 
-import java.util.function.Function;
+import java.util.Properties;
+import java.util.function.Supplier;
 
 import org.eclipse.jkube.kit.common.Configs;
-import org.eclipse.jkube.kit.common.JavaProject;
 import org.eclipse.jkube.kit.enricher.api.JKubeEnricherContext;
 import org.eclipse.jkube.kit.enricher.specific.AbstractHealthCheckEnricher;
 import org.eclipse.jkube.quarkus.QuarkusUtils;
@@ -33,15 +33,17 @@ import static org.eclipse.jkube.quarkus.QuarkusUtils.concatPath;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.isStartupEndpointSupported;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.resolveCompleteQuarkusHealthRootPath;
 import static org.eclipse.jkube.quarkus.QuarkusUtils.extractPort;
-import static org.eclipse.jkube.quarkus.QuarkusUtils.getQuarkusConfiguration;
+import static org.eclipse.jkube.quarkus.QuarkusUtils.resolveQuarkusApplicationProperties;
 
 /**
  * Enriches Quarkus containers with health checks if the quarkus-smallrye-health is present
  */
 public class QuarkusHealthCheckEnricher extends AbstractHealthCheckEnricher {
+    private final Properties quarkusApplicationConfig;
 
     public QuarkusHealthCheckEnricher(JKubeEnricherContext buildContext) {
         super(buildContext, "jkube-healthcheck-quarkus");
+        quarkusApplicationConfig = resolveQuarkusApplicationProperties(log, getContext().getProject());
     }
 
     @AllArgsConstructor
@@ -65,32 +67,32 @@ public class QuarkusHealthCheckEnricher extends AbstractHealthCheckEnricher {
     @Override
     protected Probe getReadinessProbe() {
         return discoverQuarkusHealthCheck(asInteger(getConfig(Config.READINESS_INITIAL_DELAY, "5")),
-            QuarkusUtils::resolveQuarkusReadinessPath);
+          () -> QuarkusUtils.resolveQuarkusReadinessPath(quarkusApplicationConfig));
     }
 
     @Override
     protected Probe getLivenessProbe() {
         return discoverQuarkusHealthCheck(asInteger(getConfig(Config.LIVENESS_INITIAL_DELAY, "10")),
-            QuarkusUtils::resolveQuarkusLivenessPath);
+          () -> QuarkusUtils.resolveQuarkusLivenessPath(quarkusApplicationConfig));
     }
     
     @Override
     protected Probe getStartupProbe() {
         if (isStartupEndpointSupported(getContext().getProject())) {
             return discoverQuarkusHealthCheck(asInteger(getConfig(Config.STARTUP_INITIAL_DELAY, "5")),
-                QuarkusUtils::resolveQuarkusStartupPath);
+              () -> QuarkusUtils.resolveQuarkusStartupPath(quarkusApplicationConfig));
         }
         return null;
     }
 
-    private Probe discoverQuarkusHealthCheck(int initialDelay, Function<JavaProject, String> pathResolver) {
+    private Probe discoverQuarkusHealthCheck(int initialDelay, Supplier<String> pathResolver) {
         if (!getContext().hasDependency(QUARKUS_GROUP_ID, "quarkus-smallrye-health")) {
             return null;
         }
         return new ProbeBuilder()
             .withNewHttpGet()
-              .withNewPort(asInteger(extractPort(getContext().getProject(), getQuarkusConfiguration(getContext().getProject()), getConfig(Config.PORT))))
-              .withPath(resolveHealthPath(pathResolver.apply(getContext().getProject())))
+              .withNewPort(asInteger(extractPort(getContext().getProject(), quarkusApplicationConfig, getConfig(Config.PORT))))
+              .withPath(resolveHealthPath(pathResolver.get()))
               .withScheme(getConfig(Config.SCHEME))
             .endHttpGet()
             .withFailureThreshold(asInteger(getConfig(Config.FAILURE_THRESHOLD)))
@@ -103,6 +105,6 @@ public class QuarkusHealthCheckEnricher extends AbstractHealthCheckEnricher {
         if (StringUtils.isNotBlank(getConfig(Config.HEALTH_PATH))) {
             return concatPath(getConfig(Config.HEALTH_PATH), subPath);
         }
-        return resolveCompleteQuarkusHealthRootPath(getContext().getProject(), subPath);
+        return resolveCompleteQuarkusHealthRootPath(getContext().getProject(), quarkusApplicationConfig, subPath);
     }
 }

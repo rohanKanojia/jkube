@@ -14,11 +14,15 @@
 package org.eclipse.jkube.micronaut;
 
 import org.eclipse.jkube.kit.common.JavaProject;
+import org.eclipse.jkube.kit.common.KitLogger;
 import org.eclipse.jkube.kit.common.util.JKubeProjectUtil;
 
+import java.net.URL;
 import java.util.Properties;
 
-import static org.eclipse.jkube.kit.common.util.PropertiesUtil.fromApplicationConfig;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.fromApplicationConfigSource;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.mergeResourcePropertiesWithProjectProperties;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.readPropertiesFromResource;
 
 public class MicronautUtils {
   private static final String[] MICRONAUT_APP_CONFIG_FILES_LIST = new String[] {"application.properties", "application.yml", "application.yaml", "application.json"};
@@ -32,8 +36,12 @@ public class MicronautUtils {
     return properties.getProperty("endpoints.health.enabled", "false").equalsIgnoreCase("true");
   }
 
-  public static Properties getMicronautConfiguration(JavaProject javaProject) {
-    return fromApplicationConfig(javaProject, MICRONAUT_APP_CONFIG_FILES_LIST);
+  public static Properties resolveMicronautApplicationConfigProperties(KitLogger log, JavaProject javaProject) {
+    URL propertySource = fromApplicationConfigSource(javaProject, MICRONAUT_APP_CONFIG_FILES_LIST);
+    if (propertySource != null) {
+      log.debug("Micronaut Application Config loaded from : %s", propertySource);
+    }
+    return mergeResourcePropertiesWithProjectProperties(readPropertiesFromResource(propertySource), javaProject);
   }
 
   public static boolean hasMicronautPlugin(JavaProject javaProject) {

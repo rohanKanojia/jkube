@@ -16,16 +16,21 @@ package org.eclipse.jkube.kit.common.util;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
 import org.eclipse.jkube.kit.common.JavaProject;
+import org.eclipse.jkube.kit.common.KitLogger;
 import org.eclipse.jkube.kit.common.Plugin;
-import org.eclipse.jkube.kit.common.PropertiesExtender;
 
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.fromApplicationConfigSource;
 import static org.eclipse.jkube.kit.common.util.PropertiesUtil.getPropertiesFromResource;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.mergeResourcePropertiesWithProjectProperties;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.readPropertiesFromResource;
 
 /**
  * Utility methods to access spring-boot resources.
@@ -39,6 +44,7 @@ public class SpringBootUtil {
     public static final String SPRING_BOOT_GRADLE_PLUGIN_ARTIFACT_ID = "org.springframework.boot.gradle.plugin";
     public static final String DEV_TOOLS_REMOTE_SECRET = "spring.devtools.remote.secret";
     public static final String DEV_TOOLS_REMOTE_SECRET_ENV = "SPRING_DEVTOOLS_REMOTE_SECRET";
+    private static final String[] SPRING_BOOT_APP_CONFIG_FILES_LIST = new String[] {"application.properties", "application.yml"};
 
     private static final String SPRING_WEB_FLUX_ARTIFACT_ID = "spring-boot-starter-webflux";
     private static final String PLACEHOLDER_PREFIX = "${";
@@ -66,22 +72,14 @@ public class SpringBootUtil {
      * @param compileClassLoader compile class loader
      * @return properties object
      */
-    public static PropertiesExtender getSpringBootApplicationProperties(String springActiveProfile, URLClassLoader compileClassLoader) {
+    public static Properties getSpringBootApplicationProperties(String springActiveProfile, URLClassLoader compileClassLoader) {
         URL ymlResource = compileClassLoader.findResource("application.yml");
         URL propertiesResource = compileClassLoader.findResource("application.properties");
-        
+
         Properties props = YamlUtil.getPropertiesFromYamlResource(springActiveProfile, ymlResource);
         props.putAll(getPropertiesFromResource(propertiesResource));
-        props = new SpringBootPropertyPlaceholderHelper(PLACEHOLDER_PREFIX, PLACEHOLDER_SUFFIX, VALUE_SEPARATOR, true)
-            .replaceAllPlaceholders(props);
-        
-        // Extend Properties object with resources file path
-        PropertiesExtender propsExtender = new PropertiesExtender();
-        URL propertiesFile = ymlResource != null ? ymlResource : propertiesResource;
-        propsExtender.setPropertiesFile(propertiesFile);
-        propsExtender.putAll(props);
-        
-        return propsExtender;
+        return new SpringBootPropertyPlaceholderHelper(PLACEHOLDER_PREFIX, PLACEHOLDER_SUFFIX, VALUE_SEPARATOR, true)
+          .replaceAllPlaceholders(props);
     }
 
     /**
@@ -162,6 +160,14 @@ public class SpringBootUtil {
 
     public static boolean hasSpringWebFluxDependency(JavaProject javaProject) {
         return JKubeProjectUtil.hasDependency(javaProject, SPRING_BOOT_GROUP_ID, SPRING_WEB_FLUX_ARTIFACT_ID);
+    }
+
+    public static Properties resolveSpringBootApplicationConfigProperties(KitLogger log, JavaProject javaProject) {
+        URL propertySource = fromApplicationConfigSource(javaProject, SPRING_BOOT_APP_CONFIG_FILES_LIST);
+        if (propertySource != null) {
+            log.debug("Spring Boot Application Config loaded from : %s", propertySource);
+        }
+        return mergeResourcePropertiesWithProjectProperties(readPropertiesFromResource(propertySource), javaProject);
     }
 }
 

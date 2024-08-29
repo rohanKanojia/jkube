@@ -14,11 +14,15 @@
 package org.eclipse.jkube.helidon;
 
 import org.eclipse.jkube.kit.common.JavaProject;
+import org.eclipse.jkube.kit.common.KitLogger;
 import org.eclipse.jkube.kit.common.util.JKubeProjectUtil;
 
+import java.net.URL;
 import java.util.Properties;
 
-import static org.eclipse.jkube.kit.common.util.PropertiesUtil.fromApplicationConfig;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.fromApplicationConfigSource;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.mergeResourcePropertiesWithProjectProperties;
+import static org.eclipse.jkube.kit.common.util.PropertiesUtil.readPropertiesFromResource;
 
 public class HelidonUtils {
   private static final String HELIDON_HTTP_PORT = "server.port";
@@ -39,8 +43,12 @@ public class HelidonUtils {
     return JKubeProjectUtil.hasTransitiveDependency(javaProject, "io.helidon.health", "helidon-health");
   }
 
-  public static Properties getHelidonConfiguration(JavaProject javaProject) {
-    return fromApplicationConfig(javaProject, HELIDON_APP_CONFIG_FILES_LIST);
+  public static Properties resolveHelidonApplicationConfigProperties(KitLogger log, JavaProject javaProject) {
+    URL propertySource = fromApplicationConfigSource(javaProject, HELIDON_APP_CONFIG_FILES_LIST);
+    if (propertySource != null) {
+      log.debug("Helidon Application Config loaded from : %s", propertySource);
+    }
+    return mergeResourcePropertiesWithProjectProperties(readPropertiesFromResource(propertySource), javaProject);
   }
 
   public static String extractPort(Properties properties, String defaultValue) {

@@ -115,7 +115,7 @@ class SpringBootWatcherTest {
         // Given
         watcherContext = watcherContext.toBuilder()
                 .buildContext(watcherContext.getBuildContext().toBuilder()
-                .project(JavaProject.builder().plugins(plugins).build())
+                .project(watcherContext.getBuildContext().getProject().toBuilder().plugins(plugins).build())
                 .build())
           .build();
         SpringBootWatcher springBootWatcher = new SpringBootWatcher(watcherContext);

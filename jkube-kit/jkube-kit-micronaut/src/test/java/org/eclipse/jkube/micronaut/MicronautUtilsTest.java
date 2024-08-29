@@ -19,6 +19,8 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 import org.eclipse.jkube.kit.common.JavaProject;
+import org.eclipse.jkube.kit.common.KitLogger;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,13 +29,24 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.eclipse.jkube.micronaut.MicronautUtils.extractPort;
-import static org.eclipse.jkube.micronaut.MicronautUtils.getMicronautConfiguration;
 import static org.eclipse.jkube.micronaut.MicronautUtils.hasNativeImagePackaging;
 import static org.eclipse.jkube.micronaut.MicronautUtils.isHealthEnabled;
+import static org.eclipse.jkube.micronaut.MicronautUtils.resolveMicronautApplicationConfigProperties;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class MicronautUtilsTest {
   @TempDir
   private Path temporaryFolder;
+  private KitLogger kitLogger;
+
+  @BeforeEach
+  void setUp() {
+    kitLogger = spy(new KitLogger.SilentLogger());
+  }
 
   @Test
   void extractPortWithPort() {
@@ -74,7 +87,7 @@ class MicronautUtilsTest {
   }
 
   @Test
-  void getMicronautConfigurationPrecedence() throws IOException {
+  void resolveMicronautApplicationConfigPropertiesPrecedence() throws IOException {
     // Given
     JavaProject javaProject = JavaProject.builder()
       .compileClassPathElement(MicronautUtilsTest.class.getResource("/utils-test/port-config/json/").getPath())
@@ -83,24 +96,26 @@ class MicronautUtilsTest {
       .outputDirectory(Files.createDirectory(temporaryFolder.resolve("target")).toFile())
       .build();
     // When
-    final Properties props = getMicronautConfiguration(javaProject);
+    final Properties props = resolveMicronautApplicationConfigProperties(kitLogger, javaProject);
     // Then
     assertThat(props).containsExactly(
         entry("micronaut.application.name", "port-config-test-PROPERTIES"),
         entry("micronaut.server.port", "1337"));
+    verify(kitLogger, times(1)).debug("Micronaut Application Config loaded from : %s", MicronautUtilsTest.class.getResource("/utils-test/port-config/properties/application.properties"));
   }
 
   @Test
-  void getMicronautConfigurationNoConfigFiles() throws IOException {
-      // Given
-      JavaProject javaProject = JavaProject.builder()
-        .compileClassPathElement("/")
-        .outputDirectory(Files.createDirectory(temporaryFolder.resolve("target")).toFile())
-        .build();
-      // When
-      final Properties props = getMicronautConfiguration(javaProject);
+  void resolveMicronautApplicationConfigPropertiesNoConfigFiles() throws IOException {
+    // Given
+    JavaProject javaProject = JavaProject.builder()
+      .compileClassPathElement("/")
+      .outputDirectory(Files.createDirectory(temporaryFolder.resolve("target")).toFile())
+      .build();
+    // When
+    final Properties props = resolveMicronautApplicationConfigProperties(kitLogger, javaProject);
     // Then
     assertThat(props).isEmpty();
+    verify(kitLogger, times(0)).debug(anyString(), any());
   }
 
   @ParameterizedTest
